@@ -25,5 +25,5 @@ var SUPABASE_CONFIG = {
    La herramienta pide unicamente el permiso de ENVIAR correo. Nunca puede
    leer la bandeja de entrada de nadie.
    -------------------------------------------------------------------------- */
-var GOOGLE_CLIENT_ID = 'PENDIENTE_GOOGLE_CLIENT_ID';
+var GOOGLE_CLIENT_ID = '410177900382-ne3e22lljjjvumm8ksgube44qloqrikf.apps.googleusercontent.com';
 
