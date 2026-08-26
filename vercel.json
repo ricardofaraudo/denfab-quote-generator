@@ -1,0 +1,33 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "headers": [
+    {
+      "comment": "El HTML nunca se cachea, para que un cambio publicado se vea de inmediato.",
+      "source": "/",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    },
+    {
+      "comment": "Los scripts y estilos se revalidan en cada carga. Sin esto el navegador sirve codigo viejo tras una actualizacion, que fue justo lo que nos paso en desarrollo.",
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache" }
+      ]
+    },
+    {
+      "comment": "Las librerias externas si se cachean: solo cambian al actualizar la version.",
+      "source": "/vendor/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=86400" }
+      ]
+    },
+    {
+      "comment": "El SQL del esquema no forma parte del sitio y no debe servirse.",
+      "source": "/supabase/(.*)",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex" }
+      ]
+    }
+  ]
+}
