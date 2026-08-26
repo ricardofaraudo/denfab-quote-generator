@@ -5,7 +5,7 @@
 
 var HIST_TX = {
   en: {
-    open: 'Quote history', title: 'Quote history', close: 'Close',
+    open: 'History', title: 'Quote history', close: 'Close',
     empty: 'No quotes recorded yet.',
     loading: 'Loading…',
     failed: 'Could not load the history.',
@@ -17,7 +17,7 @@ var HIST_TX = {
     status: { generated: 'Generated', sent: 'Sent', accepted: 'Accepted', declined: 'Declined', expired: 'Expired' }
   },
   es: {
-    open: 'Historial de cotizaciones', title: 'Historial de cotizaciones', close: 'Cerrar',
+    open: 'Historial', title: 'Historial de cotizaciones', close: 'Cerrar',
     empty: 'Aún no hay cotizaciones registradas.',
     loading: 'Cargando…',
     failed: 'No se pudo cargar el historial.',

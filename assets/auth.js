@@ -54,6 +54,8 @@ function paintAuthTexts() {
   document.getElementById('authSubmit').textContent = T.submit;
   var so = document.getElementById('signOutBtn');
   if (so) so.textContent = T.signOut;
+  var hb = document.getElementById('histBtnLbl');
+  if (hb) hb.textContent = HIST_TX[typeof lang !== 'undefined' ? lang : 'en'].open;
 }
 
 async function doSignIn(e) {

@@ -103,6 +103,8 @@ function setLang(l) {
   var svc = gv('svc');
   if (svc === 'corporation') document.getElementById('fix_txt').textContent = T.fix_corp;
   if (svc === 'foundation') document.getElementById('fix_txt').textContent = T.fix_found;
+  // Los botones del encabezado y del login viven fuera de este formulario.
+  if (typeof paintAuthTexts === 'function') paintAuthTexts();
   refresh();
 }
 
