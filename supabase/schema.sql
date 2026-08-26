@@ -91,32 +91,52 @@ create index if not exists quotes_status_idx      on public.quotes (status);
 alter table public.profiles enable row level security;
 alter table public.quotes   enable row level security;
 
+-- Defensa en profundidad: no basta con tener sesion, el correo tiene que ser
+-- del despacho. Si el auto-registro se encendiera por error, una cuenta ajena
+-- seguiria sin poder leer ni escribir nada.
+create or replace function public.is_firm_member()
+returns boolean
+language sql
+stable
+as $$
+  select coalesce(lower(auth.jwt() ->> 'email') like '%@denfablaw.com', false);
+$$;
+
+comment on function public.is_firm_member() is
+  'Para agregar otro dominio del despacho, extender esta condicion.';
+
 -- Perfiles: todos los del despacho se ven entre si; cada quien edita el suyo.
 drop policy if exists profiles_select on public.profiles;
 create policy profiles_select on public.profiles
-  for select to authenticated using (true);
+  for select to authenticated using (public.is_firm_member());
 
 drop policy if exists profiles_update_own on public.profiles;
 create policy profiles_update_own on public.profiles
-  for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
+  for update to authenticated
+  using (id = auth.uid() and public.is_firm_member())
+  with check (id = auth.uid() and public.is_firm_member());
 
 -- Cotizaciones: es una herramienta del despacho, asi que todos ven todo.
 -- Cada quien solo puede crear cotizaciones a su propio nombre.
 drop policy if exists quotes_select on public.quotes;
 create policy quotes_select on public.quotes
-  for select to authenticated using (true);
+  for select to authenticated using (public.is_firm_member());
 
 drop policy if exists quotes_insert_own on public.quotes;
 create policy quotes_insert_own on public.quotes
-  for insert to authenticated with check (created_by = auth.uid());
+  for insert to authenticated
+  with check (created_by = auth.uid() and public.is_firm_member());
 
 -- El seguimiento (estado, notas) lo edita quien la creo, o un admin.
 drop policy if exists quotes_update on public.quotes;
 create policy quotes_update on public.quotes
   for update to authenticated
   using (
-    created_by = auth.uid()
-    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin)
+    public.is_firm_member()
+    and (
+      created_by = auth.uid()
+      or exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin)
+    )
   );
 
 -- Nadie borra cotizaciones: son el registro historico del despacho.

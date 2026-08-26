@@ -13,6 +13,6 @@
 var SUPABASE_CONFIG = {
   url: 'https://rdexhacdabiasktaizky.supabase.co',
 
-  // Pendiente: Supabase -> Settings -> API Keys -> "anon" / "public" (empieza con eyJ...)
-  anonKey: 'PENDIENTE_ANON_KEY'
+  // Supabase -> Settings -> API Keys -> "Publishable key"
+  anonKey: 'sb_publishable_60DvWBbC9KrMGVyj0Cx3YA_0rMgjeWP'
 };
