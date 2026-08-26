@@ -159,10 +159,12 @@ async function sendByEmail() {
                    '\nDe la Guardia, Neuman, Faraudo & Bermudez';
     var mime = buildMime(to, T.subject, bodyText, built.bytes, built.filename);
 
-    var res = await fetch('https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=media', {
+    // Se usa el endpoint JSON y no el de /upload/: ese ultimo rechaza el
+    // preflight CORS del navegador y la peticion nunca llega a salir.
+    var res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
       method: 'POST',
-      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'message/rfc822' },
-      body: mime
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ raw: b64url(mime) })
     });
     if (!res.ok) {
       var detail = '';

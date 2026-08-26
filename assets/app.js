@@ -456,7 +456,9 @@ function makePDF(cname) {
   else if (window.jsPDF) jsPDF = window.jsPDF;
   else if (typeof jspdf !== 'undefined' && jspdf.jsPDF) jsPDF = jspdf.jsPDF;
   if (!jsPDF) { alert('Could not initialize PDF engine. Please use Chrome or Edge.'); return; }
-  var doc = new jsPDF({unit:'pt', format:'letter'});
+  // compress reduce el PDF de ~1.35 MB a ~30 KB (el logo pesa casi todo) sin
+  // cambiar nada de lo que se ve. Importa al adjuntarlo por correo.
+  var doc = new jsPDF({unit:'pt', format:'letter', compress:true});
   var PW=612, PH=792, LM=60, BM=90, TM=50, CW=492;
   var C = {navy:[13,43,94], navy2:[27,79,138], dark:[26,26,26], mid:[85,85,85], lg:[244,246,249], bd:[208,216,228]};
   function sf(c){doc.setFillColor(c[0],c[1],c[2]);}
