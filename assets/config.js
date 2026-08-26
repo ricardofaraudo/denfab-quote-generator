@@ -1,0 +1,18 @@
+/* ============================================================================
+   DENFAB Quote Generator — configuracion de conexion
+   ----------------------------------------------------------------------------
+   La llave `anonKey` esta disenada para vivir en el navegador: por si sola no
+   da acceso a nada. Todo el control esta en las politicas de seguridad (RLS)
+   definidas en supabase/schema.sql, que exigen sesion iniciada para leer o
+   escribir cualquier dato.
+
+   NUNCA poner aqui la llave `service_role`: esa ignora todas las reglas de
+   seguridad y da acceso total a la base de datos.
+   ========================================================================== */
+
+var SUPABASE_CONFIG = {
+  url: 'https://rdexhacdabiasktaizky.supabase.co',
+
+  // Pendiente: Supabase -> Settings -> API Keys -> "anon" / "public" (empieza con eyJ...)
+  anonKey: 'PENDIENTE_ANON_KEY'
+};

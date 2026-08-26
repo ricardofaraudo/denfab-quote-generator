@@ -511,6 +511,9 @@ function makePDF(cname) {
     var L={pensionado:'Pensionado_Visa',friendly_nations:'Friendly_Nations_Visa',bilateral_treaty:'Bilateral_Treaty_Italians',qualified_investor:'Red_Carpet_Visa',real_estate:'Real_Estate',promise_review:'Promise_Purchase_Review',property_sale:'Property_Sale',corporation:'Corporation',foundation:'Foundation'};
     doc.save('Quote_'+cname.replace(/\s+/g,'_')+'_'+(L[svc]||svc)+(lang==='es'?'_ES':'')+'.pdf');
     document.getElementById('result').innerHTML='<div class="ok">'+(isEs?'\u2713 PDF descargado para '+cname:'\u2713 PDF downloaded for '+cname)+'</div>';
+    // El registro va despues de la descarga y no la bloquea: si falla la red,
+    // el abogado ya tiene su PDF.
+    recordQuote(cname);
   }
 
   footer();
@@ -672,6 +675,7 @@ function makePDF(cname) {
 }
 window.addEventListener("load", function() {
   document.getElementById('brandLogo').src = LOGO;
+  document.getElementById('authLogo').src = LOGO;
 
   // El resumen se re-renderiza en cada refresh(), asi que el listener va en el
   // contenedor y no en cada input.
@@ -694,4 +698,6 @@ window.addEventListener("load", function() {
 
   document.getElementById('resetFees').addEventListener('click', resetOverrides);
   refresh();
+  initHistory();
+  initAuth();
 });
