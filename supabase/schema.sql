@@ -54,6 +54,7 @@ create table if not exists public.quotes (
 
   -- Datos del cliente y del abogado emisor (que puede no ser quien la genera)
   client_name     text not null,
+  client_email    text,
   salutation      text,
   lawyer_name     text not null,
 
@@ -70,6 +71,7 @@ create table if not exists public.quotes (
   -- Seguimiento comercial
   status          text not null default 'generated'
                     check (status in ('generated','sent','accepted','declined','expired')),
+  sent_at         timestamptz,
   notes           text
 );
 
@@ -77,6 +79,10 @@ comment on column public.quotes.line_items is
   'Rubros tal como salieron en el PDF, con los ajustes manuales ya aplicados.';
 comment on column public.quotes.has_adjustments is
   'Permite revisar cuanto se esta ajustando a mano, por abogado y por periodo.';
+
+-- Para bases creadas antes de que existiera el envio por correo.
+alter table public.quotes add column if not exists client_email text;
+alter table public.quotes add column if not exists sent_at timestamptz;
 
 create index if not exists quotes_created_at_idx  on public.quotes (created_at desc);
 create index if not exists quotes_created_by_idx  on public.quotes (created_by, created_at desc);

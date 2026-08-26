@@ -32,15 +32,20 @@ var HIST_TX = {
 
 function histT() { return HIST_TX[lang]; }
 
-/* Se llama justo despues de que el PDF se descarga. */
-async function recordQuote(cname) {
+/* Se llama justo despues de que el PDF se descarga o se envia.
+   opts: { sent: true, to: 'cliente@correo.com' } cuando se envio por correo. */
+async function recordQuote(cname, opts) {
   if (!sb || !currentUser) return;
+  opts = opts || {};
   var isEs = lang === 'es';
   var rows = getQuoteRows(isEs);
 
   var payload = {
     created_by: currentUser.id,
     client_name: cname,
+    client_email: (opts.to || gv('cemail').trim()) || null,
+    status: opts.sent ? 'sent' : 'generated',
+    sent_at: opts.sent ? new Date().toISOString() : null,
     salutation: gv('sal'),
     lawyer_name: getLaw(),
     language: lang,

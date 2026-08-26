@@ -19,7 +19,7 @@ function sT(t) {
 
 var TX = {
   en: {
-    lc:'Client Information', ls:'Salutation', ln:'Client Full Name', ll:'Issuing Lawyer', lo:'Lawyer Name',
+    lc:'Client Information', ls:'Salutation', ln:'Client Full Name', lce:'Client Email', ll:'Issuing Lawyer', lo:'Lawyer Name',
     o_oth:'Other...', lsv:'Service Details', lst:'Service Type',
     o_pen:'Pensionado / Retirement Visa', o_fn:'Friendly Nations Visa',
     o_bt:'Bilateral Treaty with Italians', o_qi:'Red Carpet / Qualified Investor Visa',
@@ -37,7 +37,7 @@ var TX = {
     l_o12fn:'Over 12', h_o12fn:'US$ 1,400 each', l_u12fn:'Under 12', h_u12fn:'US$ 600 each',
     l_o12qi:'Over 12', h_o12qi:'US$ 2,400 each', l_u12qi:'Under 12', h_u12qi:'US$ 1,400 each',
     l_tfn:'Total', l_tqi:'Total', l_sum:'Quote Summary', grand:'Grand Total',
-    btn_txt:'Generate & Download PDF Quote',
+    btn_txt:'Generate & Download PDF Quote', mail_txt:'Send by email to client',
     fix_corp:'Fixed fee \u2014 no additional fields required.',
     fix_found:'Fixed fee \u2014 no additional fields required.',
     FEES:'Legal Fees', EXP:'Expenses', DEP:'Dependent(s)', MAIN:'Main Applicant', MAINS:'Main Applicants',
@@ -50,7 +50,7 @@ var TX = {
     resetFees:'Restore standard fees', adjusted:'adjusted'
   },
   es: {
-    lc:'Informaci\u00f3n del Cliente', ls:'Tratamiento', ln:'Nombre Completo del Cliente', ll:'Abogado Emisor', lo:'Nombre del Abogado',
+    lc:'Informaci\u00f3n del Cliente', ls:'Tratamiento', ln:'Nombre Completo del Cliente', lce:'Correo del Cliente', ll:'Abogado Emisor', lo:'Nombre del Abogado',
     o_oth:'Otro...', lsv:'Detalles del Servicio', lst:'Tipo de Servicio',
     o_pen:'Visa de Pensionado / Jubilaci\u00f3n', o_fn:'Visa de Pa\u00edses Amigos',
     o_bt:'Tratado Bilateral con Italianos', o_qi:'Visa Red Carpet / Inversionista Calificado',
@@ -68,7 +68,7 @@ var TX = {
     l_o12fn:'Mayores de 12', h_o12fn:'US$ 1,400 c/u', l_u12fn:'Menores de 12', h_u12fn:'US$ 600 c/u',
     l_o12qi:'Mayores de 12', h_o12qi:'US$ 2,400 c/u', l_u12qi:'Menores de 12', h_u12qi:'US$ 1,400 c/u',
     l_tfn:'Total', l_tqi:'Total', l_sum:'Resumen de Cotizaci\u00f3n', grand:'Total General',
-    btn_txt:'Generar y Descargar Cotizaci\u00f3n PDF',
+    btn_txt:'Generar y Descargar Cotizaci\u00f3n PDF', mail_txt:'Enviar por correo al cliente',
     fix_corp:'Tarifa fija \u2014 no se requieren campos adicionales.',
     fix_found:'Tarifa fija \u2014 no se requieren campos adicionales.',
     FEES:'Honorarios Legales', EXP:'Gastos', DEP:'Dependiente(s)', MAIN:'Solicitante Principal', MAINS:'Solicitantes Principales',
@@ -87,14 +87,14 @@ function setLang(l) {
   document.getElementById('btn_en').className = 'lb' + (l === 'en' ? ' on' : '');
   document.getElementById('btn_es').className = 'lb' + (l === 'es' ? ' on' : '');
   var T = TX[l];
-  var ids = ['lc','ls','ln','ll','lo','o_oth','lsv','lst','o_pen','o_fn','o_bt','o_qi','o_re','o_corp','o_found',
+  var ids = ['lc','ls','ln','lce','ll','lo','o_oth','lsv','lst','o_pen','o_fn','o_bt','o_qi','o_re','o_corp','o_found',
              'd_stg','l_stg','o_tmp','o_prm','d_act','l_act','o_td','o_wc','o_rep','l_bnk','o_bkp','o_bkr',
              'd_bkt','l_bkt','o_bkt_y','o_bkt_n','l_bkt2','o_bkt_p','o_bkt_r',
              'd_ent','l_ent','o_ent_n','o_ent_c','o_ent_cp','o_ent_f',
              'l_dd','l_deed',
              'd_ppr','l_dd_ppr','l_poa','o_poa_n','o_poa_y','o_ppr',
              'd_ps','l_dd_ps','o_ps',
-             'd_prop','l_pv','d_main','l_main','d_dep','d_depfn','d_depqi','l_dep','l_tfn','l_tqi','l_sum','btn_txt'];
+             'd_prop','l_pv','d_main','l_main','d_dep','d_depfn','d_depqi','l_dep','l_tfn','l_tqi','l_sum','btn_txt','mail_txt'];
   ids.forEach(function(id) { var el = document.getElementById(id); if (el && T[id]) el.textContent = T[id]; });
   document.getElementById('l_o12fn').innerHTML = T.l_o12fn + ' <span class="lh" id="h_o12fn">' + T.h_o12fn + '</span>';
   document.getElementById('l_u12fn').innerHTML = T.l_u12fn + ' <span class="lh" id="h_u12fn">' + T.h_u12fn + '</span>';
@@ -427,6 +427,19 @@ function go() {
   }, 50);
 }
 
+/* Cuando no es null, makePDF() deja el PDF aqui en vez de descargarlo. */
+var pdfCapture = null;
+
+/* Genera el PDF en memoria y lo devuelve, sin descargarlo ni registrarlo. */
+function buildPDF(cname) {
+  pdfCapture = {};
+  var out;
+  try { makePDF(cname); out = pdfCapture; }
+  finally { pdfCapture = null; }
+  if (!out || !out.bytes) throw new Error('No se pudo generar el PDF.');
+  return out;
+}
+
 function makePDF(cname) {
   var svc = gv('svc'), stage = gv('stage'), act = gv('fn_act'), T = TX[lang];
   var nm = getNM(), ndep = gn('ndep'), fno = gn('fn_o12'), fnu = gn('fn_u12'), fnnt = fno + fnu;
@@ -511,7 +524,15 @@ function makePDF(cname) {
   }
   function save(cname,svc){
     var L={pensionado:'Pensionado_Visa',friendly_nations:'Friendly_Nations_Visa',bilateral_treaty:'Bilateral_Treaty_Italians',qualified_investor:'Red_Carpet_Visa',real_estate:'Real_Estate',promise_review:'Promise_Purchase_Review',property_sale:'Property_Sale',corporation:'Corporation',foundation:'Foundation'};
-    doc.save('Quote_'+cname.replace(/\s+/g,'_')+'_'+(L[svc]||svc)+(lang==='es'?'_ES':'')+'.pdf');
+    var filename='Quote_'+cname.replace(/\s+/g,'_')+'_'+(L[svc]||svc)+(lang==='es'?'_ES':'')+'.pdf';
+    // En modo captura el PDF se devuelve para adjuntarlo a un correo,
+    // en vez de descargarse.
+    if (pdfCapture) {
+      pdfCapture.bytes = new Uint8Array(doc.output('arraybuffer'));
+      pdfCapture.filename = filename;
+      return;
+    }
+    doc.save(filename);
     document.getElementById('result').innerHTML='<div class="ok">'+(isEs?'\u2713 PDF descargado para '+cname:'\u2713 PDF downloaded for '+cname)+'</div>';
     // El registro va despues de la descarga y no la bloquea: si falla la red,
     // el abogado ya tiene su PDF.

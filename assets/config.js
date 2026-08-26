@@ -16,3 +16,14 @@ var SUPABASE_CONFIG = {
   // Supabase -> Settings -> API Keys -> "Publishable key"
   anonKey: 'sb_publishable_60DvWBbC9KrMGVyj0Cx3YA_0rMgjeWP'
 };
+
+/* ----------------------------------------------------------------------------
+   Envio por Gmail. El Client ID de Google es publico por diseno (va en el
+   navegador); lo que protege la cuenta es la lista de origenes autorizados
+   configurada en Google Cloud, no el secreto de este valor.
+
+   La herramienta pide unicamente el permiso de ENVIAR correo. Nunca puede
+   leer la bandeja de entrada de nadie.
+   -------------------------------------------------------------------------- */
+var GOOGLE_CLIENT_ID = 'PENDIENTE_GOOGLE_CLIENT_ID';
+
