@@ -67,10 +67,12 @@ async function recordQuote(cname, opts) {
     var res = await sb.from('quotes').insert(payload);
     if (res.error) throw res.error;
   } catch (e) {
-    // El PDF ya se entrego; avisamos sin interrumpir el trabajo.
+    // El PDF ya se entrego; avisamos sin interrumpir el trabajo. Se muestra el
+    // motivo: un fallo silencioso aqui es dificil de diagnosticar despues.
     console.error('No se pudo registrar la cotizacion:', e);
     var el = document.getElementById('result');
-    if (el) el.innerHTML += '<div class="warn">' + histT().saveFailed + '</div>';
+    var why = e && (e.message || e.hint || e.code) ? ' (' + (e.message || e.hint || e.code) + ')' : '';
+    if (el) el.innerHTML += '<div class="warn">' + esc(histT().saveFailed + why) + '</div>';
   }
 }
 
