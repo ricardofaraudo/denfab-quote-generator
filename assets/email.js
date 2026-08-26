@@ -73,16 +73,32 @@ function getGoogleToken() {
         callback: function () {}   // se reasigna en cada solicitud
       });
     }
-    tokenClient.callback = function (resp) {
-      if (resp.error) { reject(new Error(mailT().denied)); return; }
-      googleToken = resp.access_token;
-      googleTokenExp = Date.now() + (parseInt(resp.expires_in, 10) || 3600) * 1000;
-      resolve(googleToken);
-    };
-    try {
-      // '' deja que Google omita el consentimiento si ya fue otorgado.
-      tokenClient.requestAccessToken({ prompt: googleToken ? '' : 'consent' });
-    } catch (e) { reject(new Error(mailT().popupBlocked)); }
+    // Se intenta primero en silencio. Si el abogado ya autorizo la herramienta,
+    // Google devuelve el token sin mostrar nada. Solo si hace falta permiso
+    // (la primera vez, o si lo revocaron) se reintenta pidiendo consentimiento.
+    var triedConsent = false;
+    var NEEDS_CONSENT = ['interaction_required', 'consent_required', 'login_required', 'access_denied'];
+
+    function attempt(prompt) {
+      tokenClient.callback = function (resp) {
+        if (resp.error) {
+          if (!triedConsent && NEEDS_CONSENT.indexOf(resp.error) >= 0) {
+            triedConsent = true; attempt('consent'); return;
+          }
+          reject(new Error(mailT().denied)); return;
+        }
+        googleToken = resp.access_token;
+        googleTokenExp = Date.now() + (parseInt(resp.expires_in, 10) || 3600) * 1000;
+        resolve(googleToken);
+      };
+      var opts = { prompt: prompt };
+      // Preseleccionar la cuenta evita el selector de correos.
+      if (currentUser && currentUser.email) opts.hint = currentUser.email;
+      try { tokenClient.requestAccessToken(opts); }
+      catch (e) { reject(new Error(mailT().popupBlocked)); }
+    }
+
+    attempt('');
   });
 }
 
