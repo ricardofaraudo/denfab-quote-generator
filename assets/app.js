@@ -433,9 +433,11 @@ function depCounts() {
 function residencyPayments(isEs) {
   return isEs
     ? ['25% de los Honorarios Legales para contratar a DENFAB e iniciar el trabajo.',
+       'Adelanto de Gastos de US$100.00 por persona para contratar a DENFAB e iniciar el trabajo.',
        '75% de los Honorarios Legales restantes previo a la solicitud de residencia.',
        '100% de los Gastos previo a la solicitud de residencia.']
     : ['25% of Legal Fees to engage DENFAB and start working.',
+       'Advance of Expenses of US$100.00 per person to engage DENFAB and start working.',
        '75% of remaining Legal Fees prior to applying for residency.',
        '100% of the Expenses prior to application for residency.'];
 }
