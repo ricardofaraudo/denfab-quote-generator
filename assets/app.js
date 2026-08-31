@@ -433,17 +433,35 @@ function depCounts() {
   return { depLegalFees: gn('ndep'), depExpenses: gn('ndep') };
 }
 
-/* Que conceptos muestra la nota en cada programa, y su precio de lista. */
+/* Que conceptos muestra la nota en cada programa, su precio de lista, y a
+   quienes se considera dependiente. El texto entre parentesis se define por
+   programa porque las categorias no son iguales en todas las visas. */
+var DEP_WHO = {
+  spouseAndMinors: { en: 'Spouse or Children Under 18', es: 'Cónyuge o Hijos Menores de 18 años' },
+  minors:          { en: 'Children under 18 years old', es: 'Hijos Menores de 18 años' },
+  generic:         { en: 'per additional dependent',    es: 'por dependiente adicional' }
+};
+
 function depNoteSpec() {
   var svc = gv('svc'), stage = gv('stage');
-  if (svc === 'pensionado') return { pr: PRICING.pensionado, keys: ['depLegalFees', 'depExpenses'] };
-  if (svc === 'bilateral_treaty') return { pr: PRICING.bilateralTreaty, keys: ['depLegalFees', 'depExpenses'] };
+  if (svc === 'pensionado') {
+    return { pr: PRICING.pensionado, who: 'spouseAndMinors', keys: ['depLegalFees', 'depExpenses'] };
+  }
+  if (svc === 'bilateral_treaty') {
+    return { pr: PRICING.bilateralTreaty, who: 'minors', keys: ['depLegalFees', 'depExpenses'] };
+  }
   if (svc === 'friendly_nations' && stage === 'temporary') {
-    return { pr: PRICING.friendlyNationsTemporary,
+    return { pr: PRICING.friendlyNationsTemporary, who: 'minors',
              keys: ['depLegalFees', 'depExpensesOver12', 'depExpensesUnder12'] };
   }
   if (svc === 'friendly_nations' && stage === 'permanent') {
-    return { pr: PRICING.friendlyNationsPermanent, keys: ['depLegalFees', 'depExpenses'] };
+    return { pr: PRICING.friendlyNationsPermanent, who: 'minors', keys: ['depLegalFees', 'depExpenses'] };
+  }
+  if (svc === 'qualified_investor') {
+    // Sin parentesis: las categorias de dependiente de esta visa no son las
+    // mismas que las de las demas, y no conviene afirmarlas de mas.
+    return { pr: PRICING.qualifiedInvestor, who: null,
+             keys: ['depLegalFees', 'depExpensesOver12', 'depExpensesUnder12'] };
   }
   return null;
 }
@@ -465,9 +483,7 @@ function depNoteText(isEs) {
   var spec = depNoteSpec();
   if (!spec) return '';
   var a = depNoteAmounts(isEs);
-  var who = isEs
-    ? (gv('svc') === 'pensionado' ? 'Cónyuge o Hijos Menores de 18 años' : 'Hijos Menores de 18 años')
-    : (gv('svc') === 'pensionado' ? 'Spouse or Children Under 18' : 'Children under 18 years old');
+  var who = spec.who ? DEP_WHO[spec.who][isEs ? 'es' : 'en'] : '';
   var L = {
     depLegalFees:       isEs ? 'Honorarios Legales' : 'Legal Fees',
     depExpenses:        isEs ? 'Gastos' : 'Expenses',
@@ -476,7 +492,8 @@ function depNoteText(isEs) {
   };
   var per = isEs ? ' por dependiente.' : ' per dependent.';
   var letters = 'abcdefg';
-  var head = (isEs ? 'Dependientes Adicionales (' : 'Additional Dependents (') + who + '):';
+  var base = isEs ? 'Dependientes Adicionales' : 'Additional Dependents';
+  var head = (who ? base + ' (' + who + ')' : base) + ':';
   return head + '\n' + spec.keys.map(function(k, i) {
     return letters[i] + ')  ' + L[k] + ': ' + fmt(a[k]) + per;
   }).join('\n');
@@ -774,6 +791,7 @@ function makePDF(cname) {
       if(qint>0) svcs.push(isEs?(nw(qint)+' ('+qint+') Cheque(s) de Caja al Ministerio de Comercio por Dependiente(s) US$1,000.00'):(nw(qint)+' ('+qint+") Cashier's Check(s) for Ministry of Commerce for Dependent(s) US$1,000.00"));
       svcs=svcs.concat(isEs?['Todos los documentos para demostrar prop\u00f3sito econ\u00f3mico ante Migraci\u00f3n','Carn\u00e9 de Residencia Permanente','C\u00e9dula']:['All documents to prove economic purpose to Immigration','Permanent Residency ID','Cedula']);
       pList = isEs?['25% de los Honorarios Legales restantes para iniciar el trabajo.','Adelanto de US$200 por persona para gastos.','75% de los Honorarios Legales previo a la solicitud.','Monto restante de Gastos previo a la solicitud.']:['25% of Legal Fees remaining to start working.','Advance of US$200 per person for expenses.','75% of Legal Fees prior to application.','Remaining amount of Expenses prior to application.'];
+      addlNote = depNoteText(isEs);
 
     } else if (svc === 'real_estate') {
       title=isEs?'Cotizaci\u00f3n de Honorarios y Gastos en la Adquisici\u00f3n de Propiedad en Panam\u00e1':'Quote for Fees & Expenses on Property Acquisition in Panama';
