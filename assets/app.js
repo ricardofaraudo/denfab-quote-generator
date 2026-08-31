@@ -458,9 +458,7 @@ function depNoteSpec() {
     return { pr: PRICING.friendlyNationsPermanent, who: 'minors', keys: ['depLegalFees', 'depExpenses'] };
   }
   if (svc === 'qualified_investor') {
-    // Sin parentesis: las categorias de dependiente de esta visa no son las
-    // mismas que las de las demas, y no conviene afirmarlas de mas.
-    return { pr: PRICING.qualifiedInvestor, who: null,
+    return { pr: PRICING.qualifiedInvestor, who: 'spouseAndMinors',
              keys: ['depLegalFees', 'depExpensesOver12', 'depExpensesUnder12'] };
   }
   return null;
