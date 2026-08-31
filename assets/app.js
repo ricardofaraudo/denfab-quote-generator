@@ -789,6 +789,7 @@ function makePDF(cname) {
       if(qint>0) svcs.push(isEs?(nw(qint)+' ('+qint+') Cheque(s) de Caja al Ministerio de Comercio por Dependiente(s) US$1,000.00'):(nw(qint)+' ('+qint+") Cashier's Check(s) for Ministry of Commerce for Dependent(s) US$1,000.00"));
       svcs=svcs.concat(isEs?['Todos los documentos para demostrar prop\u00f3sito econ\u00f3mico ante Migraci\u00f3n','Carn\u00e9 de Residencia Permanente','C\u00e9dula']:['All documents to prove economic purpose to Immigration','Permanent Residency ID','Cedula']);
       pList = isEs?['25% de los Honorarios Legales restantes para iniciar el trabajo.','Adelanto de US$200 por persona para gastos.','75% de los Honorarios Legales previo a la solicitud.','Monto restante de Gastos previo a la solicitud.']:['25% of Legal Fees remaining to start working.','Advance of US$200 per person for expenses.','75% of Legal Fees prior to application.','Remaining amount of Expenses prior to application.'];
+      note1 = isEs?'Nota 1  Esta cotización es válida únicamente por un período de treinta (30) días. La cotización no incluye Impuesto de Transferencia (7%) sobre honorarios legales.':'Note 1  This quote is valid only for a period of thirty (30) days. The quote does not include Sales Tax (7%) on legal fees.';
       addlNote = depNoteText(isEs);
 
     } else if (svc === 'real_estate') {
