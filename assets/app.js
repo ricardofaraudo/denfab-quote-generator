@@ -38,6 +38,7 @@ var TX = {
     l_o12qi:'Over 12', h_o12qi:'US$ 2,400 each', l_u12qi:'Under 12', h_u12qi:'US$ 1,400 each',
     l_tfn:'Total', l_tqi:'Total', l_sum:'Quote Summary', grand:'Grand Total',
     btn_txt:'Generate & Download PDF Quote', mail_txt:'Send by email to client',
+    depNoteFoot:'Appears at the end of the PDF. It follows the quoted dependent lines — adjust those to change it.',
     fix_corp:'Fixed fee \u2014 no additional fields required.',
     fix_found:'Fixed fee \u2014 no additional fields required.',
     FEES:'Legal Fees', EXP:'Expenses', DEP:'Dependent(s)', MAIN:'Main Applicant', MAINS:'Main Applicants',
@@ -69,9 +70,7 @@ var TX = {
     l_o12qi:'Mayores de 12', h_o12qi:'US$ 2,400 c/u', l_u12qi:'Menores de 12', h_u12qi:'US$ 1,400 c/u',
     l_tfn:'Total', l_tqi:'Total', l_sum:'Resumen de Cotizaci\u00f3n', grand:'Total General',
     btn_txt:'Generar y Descargar Cotizaci\u00f3n PDF', mail_txt:'Enviar por correo al cliente',
-    depNoteTitle:'Dependientes Adicionales (nota que sale en la cotizaci\u00f3n)',
-    depNoteHint:'Monto por dependiente adicional. Sigue al rubro cotizado; escriba aqu\u00ed para fijarlo.',
-    depNoteFoot:'Aparece al final del PDF como el costo de agregar un dependiente m\u00e1s.',
+    depNoteFoot:'Aparece al final del PDF. Sigue a los rubros de dependientes cotizados \u2014 para cambiarla, ajuste esos rubros.',
     fix_corp:'Tarifa fija \u2014 no se requieren campos adicionales.',
     fix_found:'Tarifa fija \u2014 no se requieren campos adicionales.',
     FEES:'Honorarios Legales', EXP:'Gastos', DEP:'Dependiente(s)', MAIN:'Solicitante Principal', MAINS:'Solicitantes Principales',
@@ -204,8 +203,6 @@ var overridesKey = null;
    computeFeeRows() y lo lee la nota de "Dependientes Adicionales". */
 var rowRoles = {};
 
-/* Montos por dependiente que el abogado escribio a mano en esa nota. */
-var noteOverrides = {};
 
 function configSignature() {
   return [gv('svc'), gv('stage'), gv('fn_act'), gv('entity_sel'), gv('bank_toggle'),
@@ -216,13 +213,9 @@ function configSignature() {
 
 function syncOverrides() {
   var sig = configSignature();
-  if (sig !== overridesKey) { overrides = {}; noteOverrides = {}; overridesKey = sig; }
+  if (sig !== overridesKey) { overrides = {}; overridesKey = sig; }
 }
 
-function hasNoteOverrides() {
-  for (var k in noteOverrides) { if (noteOverrides.hasOwnProperty(k)) return true; }
-  return false;
-}
 
 function hasOverrides() {
   syncOverrides();
@@ -230,7 +223,7 @@ function hasOverrides() {
   return false;
 }
 
-function resetOverrides() { overrides = {}; noteOverrides = {}; overridesKey = configSignature(); buildSummary(); }
+function resetOverrides() { overrides = {}; overridesKey = configSignature(); buildSummary(); }
 
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -470,7 +463,6 @@ function depNoteAmounts(isEs) {
   syncOverrides();
   var rows = getQuoteRows(isEs), counts = depCounts(), out = {};
   spec.keys.forEach(function(k) {
-    if (noteOverrides.hasOwnProperty(k)) { out[k] = noteOverrides[k]; return; }
     var idx = rowRoles[k], n = counts[k];
     out[k] = (idx !== undefined && rows[idx] && n > 0) ? rows[idx][1] / n : spec.pr[k];
   });
@@ -501,18 +493,9 @@ function refreshTotal() {
   var el = document.getElementById('grandTotal');
   if (el) el.textContent = fmt(quoteTotal(getQuoteRows(lang === 'es')));
   var rb = document.getElementById('resetFees');
-  if (rb) rb.style.display = (hasOverrides() || hasNoteOverrides()) ? '' : 'none';
+  if (rb) rb.style.display = hasOverrides() ? '' : 'none';
 }
 
-/* Repinta los montos de la nota sin re-renderizar el resumen completo. */
-function refreshDepNoteInputs() {
-  var a = depNoteAmounts(lang === 'es');
-  if (!a) return;
-  [].slice.call(document.querySelectorAll('#summary .dep-in')).forEach(function(inp) {
-    var k = inp.dataset.k;
-    if (a.hasOwnProperty(k) && !noteOverrides.hasOwnProperty(k)) inp.value = a[k];
-  });
-}
 
 function buildSummary() {
   var T = TX[lang], isEs = lang === 'es';
@@ -528,32 +511,24 @@ function buildSummary() {
   });
   html += '<div class="st"><span>' + T.grand + '</span><span id="grandTotal">' + fmt(quoteTotal(rows)) + '</span></div>';
 
-  // Nota de "Dependientes Adicionales": sigue lo cotizado, y tambien se edita.
-  var spec = depNoteSpec();
-  if (spec) {
-    var a = depNoteAmounts(isEs);
-    var L = {
-      depLegalFees:       isEs ? 'Honorarios Legales' : 'Legal Fees',
-      depExpenses:        isEs ? 'Gastos' : 'Expenses',
-      depExpensesOver12:  isEs ? 'Gastos (mayores de 12)' : 'Expenses (over 12)',
-      depExpensesUnder12: isEs ? 'Gastos (menores de 12)' : 'Expenses (under 12)'
-    };
-    html += '<div class="dep-note"><div class="dep-note-hd">' + esc(T.depNoteTitle) + '</div>';
-    spec.keys.forEach(function(k) {
-      var edited = noteOverrides.hasOwnProperty(k);
-      html += '<div class="sr' + (edited ? ' edited' : '') + '">' +
-                '<span class="sr-lbl">' + esc(L[k]) +
-                  (edited ? '<span class="sr-tag">' + esc(T.adjusted) + '</span>' : '') + '</span>' +
-                '<span class="sr-amt">US$&nbsp;<input type="number" class="amt-in dep-in" step="0.01" min="0" ' +
-                  'data-k="' + k + '" value="' + a[k] + '" title="' + esc(T.depNoteHint) + '"></span>' +
-              '</div>';
-    });
-    html += '<p class="dep-note-ft">' + esc(T.depNoteFoot) + '</p></div>';
-  }
 
   document.getElementById('summary').innerHTML = html;
   var rb = document.getElementById('resetFees');
-  if (rb) { rb.textContent = T.resetFees; rb.style.display = (hasOverrides() || hasNoteOverrides()) ? '' : 'none'; }
+  if (rb) { rb.textContent = T.resetFees; rb.style.display = hasOverrides() ? '' : 'none'; }
+  buildDepNotePreview();
+}
+
+/* Vista previa de solo lectura de la nota de dependientes. Se deriva de los
+   rubros cotizados: para cambiarla se ajusta el rubro, no la nota. */
+function buildDepNotePreview() {
+  var box = document.getElementById('depNotePrev');
+  if (!box) return;
+  var txt = depNoteText(lang === 'es');
+  if (!txt) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.style.display = '';
+  box.innerHTML = txt.split('\n').map(function (line, i) {
+    return '<div class="' + (i === 0 ? 'dep-note-hd' : 'dep-note-li') + '">' + esc(line) + '</div>';
+  }).join('') + '<div class="dep-note-ft">' + esc(TX[lang].depNoteFoot) + '</div>';
 }
 
 function go() {
@@ -860,8 +835,7 @@ window.addEventListener("load", function() {
     if (!el.classList || !el.classList.contains('amt-in')) return;
     syncOverrides();
     var v = parseFloat(el.value);
-    if (el.dataset.k) { noteOverrides[el.dataset.k] = (isNaN(v) || v < 0) ? 0 : v; }
-    else { overrides[parseInt(el.dataset.i, 10)] = (isNaN(v) || v < 0) ? 0 : v; }
+    overrides[parseInt(el.dataset.i, 10)] = (isNaN(v) || v < 0) ? 0 : v;
     var row = el.parentNode.parentNode;
     row.classList.add('edited');
     if (!row.querySelector('.sr-tag')) {
@@ -871,10 +845,9 @@ window.addEventListener("load", function() {
       row.querySelector('.sr-lbl').appendChild(tag);
     }
     refreshTotal();
-    // Ajustar un rubro de dependientes cambia el monto por persona, asi que la
-    // nota tiene que seguirlo. No se repinta el campo que se esta escribiendo,
-    // para no mover el cursor.
-    if (!el.dataset.k) refreshDepNoteInputs();
+    // Ajustar un rubro de dependientes cambia el monto por persona, y la nota
+    // se deriva de ahi, asi que hay que repintarla.
+    buildDepNotePreview();
   });
 
   document.getElementById('resetFees').addEventListener('click', resetOverrides);
