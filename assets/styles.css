@@ -87,3 +87,8 @@ footer{text-align:center;padding:1.4rem;font-size:11.5px;color:#aab;border-top:1
 /* --- Boton de envio por correo ------------------------------------------- */
 .btn-mail{margin-top:.6rem;background:#fff;color:var(--navy);border:1px solid var(--navy2);}
 .btn-mail:hover{background:var(--nl);}
+
+/* --- Nota de dependientes adicionales ------------------------------------ */
+.dep-note{margin-top:1.1rem;padding-top:.9rem;border-top:1px dashed var(--brd);}
+.dep-note-hd{margin-bottom:.5rem;font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em;}
+.dep-note-ft{margin-top:.5rem;font-size:11.5px;font-style:italic;color:var(--mid);}

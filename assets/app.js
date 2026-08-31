@@ -69,6 +69,9 @@ var TX = {
     l_o12qi:'Mayores de 12', h_o12qi:'US$ 2,400 c/u', l_u12qi:'Menores de 12', h_u12qi:'US$ 1,400 c/u',
     l_tfn:'Total', l_tqi:'Total', l_sum:'Resumen de Cotizaci\u00f3n', grand:'Total General',
     btn_txt:'Generar y Descargar Cotizaci\u00f3n PDF', mail_txt:'Enviar por correo al cliente',
+    depNoteTitle:'Dependientes Adicionales (nota que sale en la cotizaci\u00f3n)',
+    depNoteHint:'Monto por dependiente adicional. Sigue al rubro cotizado; escriba aqu\u00ed para fijarlo.',
+    depNoteFoot:'Aparece al final del PDF como el costo de agregar un dependiente m\u00e1s.',
     fix_corp:'Tarifa fija \u2014 no se requieren campos adicionales.',
     fix_found:'Tarifa fija \u2014 no se requieren campos adicionales.',
     FEES:'Honorarios Legales', EXP:'Gastos', DEP:'Dependiente(s)', MAIN:'Solicitante Principal', MAINS:'Solicitantes Principales',
@@ -197,6 +200,13 @@ function entSvcs(isEs) {
 var overrides = {};
 var overridesKey = null;
 
+/* Que fila corresponde a cada concepto de dependientes. Lo llena
+   computeFeeRows() y lo lee la nota de "Dependientes Adicionales". */
+var rowRoles = {};
+
+/* Montos por dependiente que el abogado escribio a mano en esa nota. */
+var noteOverrides = {};
+
 function configSignature() {
   return [gv('svc'), gv('stage'), gv('fn_act'), gv('entity_sel'), gv('bank_toggle'),
           gv('bank_type'), gv('poa_toggle'), getNM(), gn('ndep'), gn('fn_o12'),
@@ -206,7 +216,12 @@ function configSignature() {
 
 function syncOverrides() {
   var sig = configSignature();
-  if (sig !== overridesKey) { overrides = {}; overridesKey = sig; }
+  if (sig !== overridesKey) { overrides = {}; noteOverrides = {}; overridesKey = sig; }
+}
+
+function hasNoteOverrides() {
+  for (var k in noteOverrides) { if (noteOverrides.hasOwnProperty(k)) return true; }
+  return false;
 }
 
 function hasOverrides() {
@@ -215,7 +230,7 @@ function hasOverrides() {
   return false;
 }
 
-function resetOverrides() { overrides = {}; overridesKey = configSignature(); buildSummary(); }
+function resetOverrides() { overrides = {}; noteOverrides = {}; overridesKey = configSignature(); buildSummary(); }
 
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -242,6 +257,12 @@ function computeFeeRows(isEs) {
     return isEs ? 'Apertura de Cuenta Bancaria (' + (bkMethod === 'remote' ? 'Remotamente' : 'En Panamá') + ')'
                 : 'Bank Account Opening (' + (bkMethod === 'remote' ? 'Remotely' : 'In Panama') + ')';
   }
+  // Se anota en que fila quedo cada concepto de dependientes, para que la nota
+  // de "Dependientes Adicionales" pueda leer el monto realmente cotizado
+  // (incluido el que el abogado haya ajustado a mano) en vez de repetir el
+  // precio de lista.
+  var roles = {};
+  function tag(role) { roles[role] = rows.length - 1; }
   var F = T.FEES, G = T.EXP, D = T.DEP;
   var rows = [], pr;
 
@@ -256,8 +277,8 @@ function computeFeeRows(isEs) {
     rows = [[F + ' – ' + mlb(pr.legalFees), pr.legalFees * nm],
             [G + ' – ' + mlb(pr.expenses), pr.expenses * nm]];
     if (ndep > 0) {
-      rows.push([F + ' – ' + ndep + ' ' + D + ea(pr.depLegalFees), pr.depLegalFees * ndep]);
-      rows.push([G + ' – ' + ndep + ' ' + D + ea(pr.depExpenses), pr.depExpenses * ndep]);
+      rows.push([F + ' – ' + ndep + ' ' + D + ea(pr.depLegalFees), pr.depLegalFees * ndep]); tag('depLegalFees');
+      rows.push([G + ' – ' + ndep + ' ' + D + ea(pr.depExpenses), pr.depExpenses * ndep]); tag('depExpenses');
     }
 
   } else if (svc === 'bilateral_treaty') {
@@ -267,8 +288,8 @@ function computeFeeRows(isEs) {
     rows.push([F + ' – ' + mlb(pr.legalFees), pr.legalFees * nm],
               [G + ' – ' + mlb(pr.expenses), pr.expenses * nm]);
     if (ndep > 0) {
-      rows.push([F + ' – ' + ndep + ' ' + D + ea(pr.depLegalFees), pr.depLegalFees * ndep]);
-      rows.push([G + ' – ' + ndep + ' ' + D + ea(pr.depExpenses), pr.depExpenses * ndep]);
+      rows.push([F + ' – ' + ndep + ' ' + D + ea(pr.depLegalFees), pr.depLegalFees * ndep]); tag('depLegalFees');
+      rows.push([G + ' – ' + ndep + ' ' + D + ea(pr.depExpenses), pr.depExpenses * ndep]); tag('depExpenses');
     }
 
   } else if (svc === 'friendly_nations' && stage === 'temporary') {
@@ -278,26 +299,26 @@ function computeFeeRows(isEs) {
     else if (bkInclude) rows.push([bankLabel(), bk * nm]);
     rows.push([F + ' – ' + mlb(pr.legalFees), pr.legalFees * nm],
               [G + ' – ' + mlb(pr.expenses), pr.expenses * nm]);
-    if (fnnt > 0) rows.push([F + ' – ' + fnnt + ' ' + D + ea(pr.depLegalFees), pr.depLegalFees * fnnt]);
-    if (fno > 0) rows.push([G + ' – ' + fno + ' ' + (isEs ? 'Dep. mayores de 12' : 'Dep. over 12') + ea(pr.depExpensesOver12), pr.depExpensesOver12 * fno]);
-    if (fnu > 0) rows.push([G + ' – ' + fnu + ' ' + (isEs ? 'Dep. menores de 12' : 'Dep. under 12') + ea(pr.depExpensesUnder12), pr.depExpensesUnder12 * fnu]);
+    if (fnnt > 0) { rows.push([F + ' – ' + fnnt + ' ' + D + ea(pr.depLegalFees), pr.depLegalFees * fnnt]); tag('depLegalFees'); }
+    if (fno > 0) { rows.push([G + ' – ' + fno + ' ' + (isEs ? 'Dep. mayores de 12' : 'Dep. over 12') + ea(pr.depExpensesOver12), pr.depExpensesOver12 * fno]); tag('depExpensesOver12'); }
+    if (fnu > 0) { rows.push([G + ' – ' + fnu + ' ' + (isEs ? 'Dep. menores de 12' : 'Dep. under 12') + ea(pr.depExpensesUnder12), pr.depExpensesUnder12 * fnu]); tag('depExpensesUnder12'); }
 
   } else if (svc === 'friendly_nations' && stage === 'permanent') {
     pr = PRICING.friendlyNationsPermanent;
     rows = [[F + ' – ' + mlb(pr.legalFees), pr.legalFees * nm],
             [G + ' – ' + mlb(pr.expenses), pr.expenses * nm]];
     if (ndep > 0) {
-      rows.push([F + ' – ' + ndep + ' ' + D + ea(pr.depLegalFees), pr.depLegalFees * ndep]);
-      rows.push([G + ' – ' + ndep + ' ' + D + ea(pr.depExpenses), pr.depExpenses * ndep]);
+      rows.push([F + ' – ' + ndep + ' ' + D + ea(pr.depLegalFees), pr.depLegalFees * ndep]); tag('depLegalFees');
+      rows.push([G + ' – ' + ndep + ' ' + D + ea(pr.depExpenses), pr.depExpenses * ndep]); tag('depExpenses');
     }
 
   } else if (svc === 'qualified_investor') {
     pr = PRICING.qualifiedInvestor;
     rows = [[F + ' – ' + mlb(pr.legalFees), pr.legalFees * nm],
             [G + ' – ' + mlb(pr.expenses), pr.expenses * nm]];
-    if (qint > 0) rows.push([F + ' – ' + nw(qint) + ' (' + qint + ') ' + D + ea(pr.depLegalFees), pr.depLegalFees * qint]);
-    if (qio > 0) rows.push([G + ' – ' + qio + ' ' + (isEs ? 'Dep. mayores de 12' : 'Dep. over 12') + ea(pr.depExpensesOver12), pr.depExpensesOver12 * qio]);
-    if (qiu > 0) rows.push([G + ' – ' + qiu + ' ' + (isEs ? 'Dep. menores de 12' : 'Dep. under 12') + ea(pr.depExpensesUnder12), pr.depExpensesUnder12 * qiu]);
+    if (qint > 0) { rows.push([F + ' – ' + nw(qint) + ' (' + qint + ') ' + D + ea(pr.depLegalFees), pr.depLegalFees * qint]); tag('depLegalFees'); }
+    if (qio > 0) { rows.push([G + ' – ' + qio + ' ' + (isEs ? 'Dep. mayores de 12' : 'Dep. over 12') + ea(pr.depExpensesOver12), pr.depExpensesOver12 * qio]); tag('depExpensesOver12'); }
+    if (qiu > 0) { rows.push([G + ' – ' + qiu + ' ' + (isEs ? 'Dep. menores de 12' : 'Dep. under 12') + ea(pr.depExpensesUnder12), pr.depExpensesUnder12 * qiu]); tag('depExpensesUnder12'); }
 
   } else if (svc === 'real_estate') {
     pr = PRICING.realEstate;
@@ -363,10 +384,17 @@ function computeFeeRows(isEs) {
   }
 
   // Programas donde la cuenta bancaria y la entidad se anteponen al bloque de honorarios.
+  var prepended = 0;
   if (svc === 'pensionado' || (svc === 'friendly_nations' && stage === 'permanent') || svc === 'qualified_investor') {
-    if (bkInclude) rows.unshift([bankLabel(), bk]);
+    if (bkInclude) { rows.unshift([bankLabel(), bk]); prepended++; }
     var er = entRows(isEs);
-    for (var ei = er.length - 1; ei >= 0; ei--) rows.unshift(er[ei]);
+    for (var ei = er.length - 1; ei >= 0; ei--) { rows.unshift(er[ei]); prepended++; }
+  }
+  // Cada unshift corre las filas hacia abajo, asi que los indices anotados con
+  // tag() hay que desplazarlos o apuntarian a la fila equivocada.
+  rowRoles = {};
+  for (var rk in roles) {
+    if (roles.hasOwnProperty(rk)) rowRoles[rk] = roles[rk] + prepended;
   }
   return rows;
 }
@@ -384,11 +412,91 @@ function quoteTotal(rows) {
   return rows.reduce(function(s, r) { return s + r[1]; }, 0);
 }
 
+/* --- Nota de "Dependientes Adicionales" -----------------------------------
+   Los montos salen de lo que realmente se cotizo: el total de la fila de
+   dependientes dividido entre cuantos son. Asi, si el abogado ajusta esa fila
+   a mano, la nota lo sigue. Cuando no hay dependientes cotizados no hay de
+   donde dividir, y se cae al precio de lista.
+   El abogado puede ademas escribir un monto propio, que manda sobre todo. */
+
+/* Cuantos dependientes hay detras de cada concepto. */
+function depCounts() {
+  var svc = gv('svc');
+  if (svc === 'friendly_nations' && gv('stage') === 'temporary') {
+    return { depLegalFees: gn('fn_o12') + gn('fn_u12'),
+             depExpensesOver12: gn('fn_o12'), depExpensesUnder12: gn('fn_u12') };
+  }
+  if (svc === 'qualified_investor') {
+    return { depLegalFees: gn('qi_o12') + gn('qi_u12'),
+             depExpensesOver12: gn('qi_o12'), depExpensesUnder12: gn('qi_u12') };
+  }
+  return { depLegalFees: gn('ndep'), depExpenses: gn('ndep') };
+}
+
+/* Que conceptos muestra la nota en cada programa, y su precio de lista. */
+function depNoteSpec() {
+  var svc = gv('svc'), stage = gv('stage');
+  if (svc === 'pensionado') return { pr: PRICING.pensionado, keys: ['depLegalFees', 'depExpenses'] };
+  if (svc === 'bilateral_treaty') return { pr: PRICING.bilateralTreaty, keys: ['depLegalFees', 'depExpenses'] };
+  if (svc === 'friendly_nations' && stage === 'temporary') {
+    return { pr: PRICING.friendlyNationsTemporary,
+             keys: ['depLegalFees', 'depExpensesOver12', 'depExpensesUnder12'] };
+  }
+  if (svc === 'friendly_nations' && stage === 'permanent') {
+    return { pr: PRICING.friendlyNationsPermanent, keys: ['depLegalFees', 'depExpenses'] };
+  }
+  return null;
+}
+
+function depNoteAmounts(isEs) {
+  var spec = depNoteSpec();
+  if (!spec) return null;
+  syncOverrides();
+  var rows = getQuoteRows(isEs), counts = depCounts(), out = {};
+  spec.keys.forEach(function(k) {
+    if (noteOverrides.hasOwnProperty(k)) { out[k] = noteOverrides[k]; return; }
+    var idx = rowRoles[k], n = counts[k];
+    out[k] = (idx !== undefined && rows[idx] && n > 0) ? rows[idx][1] / n : spec.pr[k];
+  });
+  return out;
+}
+
+function depNoteText(isEs) {
+  var spec = depNoteSpec();
+  if (!spec) return '';
+  var a = depNoteAmounts(isEs);
+  var who = isEs
+    ? (gv('svc') === 'pensionado' ? 'Cónyuge o Hijos Menores de 18 años' : 'Hijos Menores de 18 años')
+    : (gv('svc') === 'pensionado' ? 'Spouse or Children Under 18' : 'Children under 18 years old');
+  var L = {
+    depLegalFees:       isEs ? 'Honorarios Legales' : 'Legal Fees',
+    depExpenses:        isEs ? 'Gastos' : 'Expenses',
+    depExpensesOver12:  isEs ? 'Gastos (mayores de 12)' : 'Expenses (over 12)',
+    depExpensesUnder12: isEs ? 'Gastos (menores de 12)' : 'Expenses (under 12)'
+  };
+  var per = isEs ? ' por dependiente.' : ' per dependent.';
+  var letters = 'abcdefg';
+  var head = (isEs ? 'Dependientes Adicionales (' : 'Additional Dependents (') + who + '):';
+  return head + '\n' + spec.keys.map(function(k, i) {
+    return letters[i] + ')  ' + L[k] + ': ' + fmt(a[k]) + per;
+  }).join('\n');
+}
+
 function refreshTotal() {
   var el = document.getElementById('grandTotal');
   if (el) el.textContent = fmt(quoteTotal(getQuoteRows(lang === 'es')));
   var rb = document.getElementById('resetFees');
-  if (rb) rb.style.display = hasOverrides() ? '' : 'none';
+  if (rb) rb.style.display = (hasOverrides() || hasNoteOverrides()) ? '' : 'none';
+}
+
+/* Repinta los montos de la nota sin re-renderizar el resumen completo. */
+function refreshDepNoteInputs() {
+  var a = depNoteAmounts(lang === 'es');
+  if (!a) return;
+  [].slice.call(document.querySelectorAll('#summary .dep-in')).forEach(function(inp) {
+    var k = inp.dataset.k;
+    if (a.hasOwnProperty(k) && !noteOverrides.hasOwnProperty(k)) inp.value = a[k];
+  });
 }
 
 function buildSummary() {
@@ -404,9 +512,33 @@ function buildSummary() {
             '</div>';
   });
   html += '<div class="st"><span>' + T.grand + '</span><span id="grandTotal">' + fmt(quoteTotal(rows)) + '</span></div>';
+
+  // Nota de "Dependientes Adicionales": sigue lo cotizado, y tambien se edita.
+  var spec = depNoteSpec();
+  if (spec) {
+    var a = depNoteAmounts(isEs);
+    var L = {
+      depLegalFees:       isEs ? 'Honorarios Legales' : 'Legal Fees',
+      depExpenses:        isEs ? 'Gastos' : 'Expenses',
+      depExpensesOver12:  isEs ? 'Gastos (mayores de 12)' : 'Expenses (over 12)',
+      depExpensesUnder12: isEs ? 'Gastos (menores de 12)' : 'Expenses (under 12)'
+    };
+    html += '<div class="dep-note"><div class="dep-note-hd">' + esc(T.depNoteTitle) + '</div>';
+    spec.keys.forEach(function(k) {
+      var edited = noteOverrides.hasOwnProperty(k);
+      html += '<div class="sr' + (edited ? ' edited' : '') + '">' +
+                '<span class="sr-lbl">' + esc(L[k]) +
+                  (edited ? '<span class="sr-tag">' + esc(T.adjusted) + '</span>' : '') + '</span>' +
+                '<span class="sr-amt">US$&nbsp;<input type="number" class="amt-in dep-in" step="0.01" min="0" ' +
+                  'data-k="' + k + '" value="' + a[k] + '" title="' + esc(T.depNoteHint) + '"></span>' +
+              '</div>';
+    });
+    html += '<p class="dep-note-ft">' + esc(T.depNoteFoot) + '</p></div>';
+  }
+
   document.getElementById('summary').innerHTML = html;
   var rb = document.getElementById('resetFees');
-  if (rb) { rb.textContent = T.resetFees; rb.style.display = hasOverrides() ? '' : 'none'; }
+  if (rb) { rb.textContent = T.resetFees; rb.style.display = (hasOverrides() || hasNoteOverrides()) ? '' : 'none'; }
 }
 
 function go() {
@@ -598,7 +730,7 @@ function makePDF(cname) {
       svcs = isEs?['Registro de Solicitantes en Migraci\u00f3n','Traducci\u00f3n de Documentos al Espa\u00f1ol','Certificados de Salud','Gastos de Notar\u00eda Local','Solicitud de Residencia Permanente','Carn\u00e9 Temporal durante el Proceso','Permiso de M\u00faltiple Entrada y Salida','Traducci\u00f3n de Documentaci\u00f3n','Tramitaci\u00f3n de visa hasta emisi\u00f3n de Resoluci\u00f3n','Obtenci\u00f3n de Nota de C\u00e9dula tras la Residencia','Acompa\u00f1amiento al Tribunal Electoral para obtener C\u00e9dula']:['Registration of Applicants at Immigration','Translation of Documents into Spanish','Health Certificates','Local Notary Expenses','Application for Permanent Residency','Temporary ID during Process','Multiple Entry & Exit Permit','Translation of Documentation','Processing visa until Resolution has been issued','Obtaining Cedula Note After residency','Taking Client to Tribunal Electoral to obtain Cedula'];
       pList = isEs?['25% de los Honorarios Legales para iniciar la revisi\u00f3n de documentaci\u00f3n.','75% de los Honorarios Legales restantes al registrar pasaportes en Migraci\u00f3n.','100% de los Gastos tras el Registro']:['25% of Legal Fees to start reviewing documentation.','75% of remaining Legal Fees at Registration of Passports at immigration.','100% of the Expenses after Registration'];
       note1 = isEs?'Nota 1  Esta cotizaci\u00f3n es v\u00e1lida \u00fanicamente por un per\u00edodo de treinta (30) d\u00edas. No incluye Impuesto de Transferencia (7%).':'Note 1  This quote is valid only for a period of thirty (30) days. Quote does not include Sales Tax (7%).';
-      addlNote = isEs?'Dependientes Adicionales (C\u00f3nyuge o Hijos Menores de 18 a\u00f1os):\na)  Honorarios Legales por cada Dependiente adicional: US$ 800.00 por dependiente.\nb)  Gastos por cada Dependiente adicional: US$ 500.00 por dependiente.':'Additional Dependents (Spouse or Children Under 18):\na)  Legal Fees for each additional Dependent will be US$ 800.00 per dependent.\nb)  Expenses for each additional Dependent will be US$ 500.00 per dependent.';
+      addlNote = depNoteText(isEs);
 
     } else if (svc === 'bilateral_treaty') {
       title = isEs?('Solicitud de Residencia Indefinida bajo Tratado Bilateral con Italianos para '+ml+(ndep>0?' m\u00e1s '+ndep+' Dependiente(s)':'')):('Indefinite Residency Application under Bilateral Treaty with Italians Visa for '+ml+(ndep>0?' plus '+ndep+' Dependent(s)':''));
@@ -607,7 +739,7 @@ function makePDF(cname) {
       svcs = isEs?[...bkSvcEs,'Registro de Corporaci\u00f3n','Obtenci\u00f3n de Certificado del Registro P\u00fablico','Registro de Solicitantes en Migraci\u00f3n','Traducci\u00f3n de Documentos al Espa\u00f1ol','Certificados de Salud','Gastos de Notar\u00eda Local','Solicitud de Carn\u00e9 de Residencia Indefinida','Carn\u00e9 Temporal durante el Proceso','Permiso de M\u00faltiple Entrada y Salida','Traducci\u00f3n de Documentaci\u00f3n','Tramitaci\u00f3n de visa hasta emisi\u00f3n de Resoluci\u00f3n.','Dos (2) Cheques de Caja a favor del Tesoro Nacional US$250.00','Todos los documentos para demostrar prop\u00f3sito econ\u00f3mico ante Migraci\u00f3n','Obtenci\u00f3n de Residencia Indefinida']:[...bkSvcEn,'Registration of Corporation','Obtaining of Public Registry Certificate','Registration of Applicants at Immigration','Translation of Documents into Spanish','Health Certificates','Local Notary Expenses','Application for Indefinite Residency ID','Temporary ID during Process','Multiple Entry & Exit Permit','Translation of Documentation','Processing visa until Resolution has been issued.',"Two (2) Cashier's Checks for National Treasury US$250.00",'All documents to prove economic purpose to Immigration','Obtaining Indefinite Residency'];
       pList = isEs?['25% de los Honorarios Legales restantes para iniciar el trabajo.','75% de los Honorarios Legales previo a la solicitud.','100% de los Gastos previo a la solicitud']:['25% of Legal Fees remaining to start working.','75% of Legal Fees prior to application.','100% of the Expenses prior to application'];
       note1 = isEs?'Nota 1  Esta cotizaci\u00f3n es v\u00e1lida \u00fanicamente por un per\u00edodo de treinta (30) d\u00edas. La cotizaci\u00f3n no incluye Impuesto de Transferencia (7%) sobre honorarios legales.':'Note 1  This quote is valid only for a period of thirty (30) days. The quote does not include Sales Tax (7%) on legal fees.';
-      addlNote = isEs?'Dependientes Adicionales (Hijos Menores de 18 a\u00f1os):\na)  Honorarios Legales: US$ 800.00 por dependiente.\nb)  Gastos: US$ 600.00 por dependiente.':'Additional Dependents (Children under 18 years old):\na)  Legal Fees for each additional Dependent will be US$ 800.00 per dependent.\nb)  Expenses for each additional Dependent will be US$ 600.00 per dependent.';
+      addlNote = depNoteText(isEs);
 
     } else if (svc === 'friendly_nations' && stage === 'temporary') {
       var fnnt2=fno+fnu, tc=nm+fnnt2, ic=nm+fno;
@@ -626,14 +758,14 @@ function makePDF(cname) {
       svcs = baseSvcs.concat(econSvcs).concat(endSvcs);
       pList = isEs?['25% de los Honorarios Legales restantes para iniciar el trabajo.','75% de los Honorarios Legales previo a la solicitud.','100% de los Gastos previo a la solicitud']:['25% of Legal Fees remaining to start working.','75% of Legal Fees prior to application.','100% of the Expenses prior to application'];
       note1 = isEs?'Nota 1  Esta cotizaci\u00f3n es v\u00e1lida \u00fanicamente por un per\u00edodo de treinta (30) d\u00edas. La cotizaci\u00f3n no incluye Impuesto de Transferencia (7%) sobre honorarios legales.':'Note 1  This quote is valid only for a period of thirty (30) days. The quote does not include Sales Tax (7%) on legal fees.';
-      addlNote = isEs?'Dependientes Adicionales (Hijos Menores de 18 a\u00f1os):\na)  Honorarios Legales: US$ 800.00 por dependiente.\nb)  Gastos (mayores de 12): US$ 1,400.00 por dependiente.\nc)  Gastos (menores de 12): US$ 600.00 por dependiente.':'Additional Dependents (Children under 18 years old):\na)  Legal Fees for each additional Dependent will be US$ 800.00 per dependent.\nb)  Expenses for each additional Dependent (over 12): US$ 1,400.00 per dependent.\nc)  Expenses for each additional Dependent (under 12): US$ 600.00 per dependent.';
+      addlNote = depNoteText(isEs);
 
     } else if (svc === 'friendly_nations' && stage === 'permanent') {
       title = isEs?('Residencia Permanente bajo Visa de Pa\u00edses Amigos de Panam\u00e1 para '+ml+(ndep>0?' m\u00e1s '+ndep+' Dependiente(s)':'')):('Permanent Residency under Countries Friendly to Panama Visa for '+ml+(ndep>0?' plus '+ndep+' Dependent(s)':''));
       svcs = isEs?['Obtenci\u00f3n de Certificado del Registro P\u00fablico','Registro de Solicitantes en Migraci\u00f3n','Traducci\u00f3n de Documentos al Espa\u00f1ol','Certificados de Salud','Gastos de Notar\u00eda Local','Solicitud de Residencia Permanente','Carn\u00e9 Temporal durante el Proceso','Permiso de M\u00faltiple Entrada y Salida','Tramitaci\u00f3n de visa hasta emisi\u00f3n de Resoluci\u00f3n.','Todos los documentos para demostrar prop\u00f3sito econ\u00f3mico ante Migraci\u00f3n','Carn\u00e9 de Residencia Indefinida']:['Obtaining of Public Registry Certificate','Registration of Applicants at Immigration','Translation of Documents into Spanish','Health Certificates','Local Notary Expenses','Application for Permanent Residency','Temporary ID during Process','Multiple Entry & Exit Permit','Processing visa until Resolution has been issued.','All documents to prove economic purpose to Immigration','Indefinite Residency ID'];
       pList = isEs?['25% de los Honorarios Legales restantes para iniciar el trabajo.','75% de los Honorarios Legales previo a la solicitud.','100% de los Gastos previo a la solicitud']:['25% of Legal Fees remaining to start working.','75% of Legal Fees prior to application.','100% of the Expenses prior to application'];
       note1 = isEs?'Nota 1  Esta cotizaci\u00f3n es v\u00e1lida \u00fanicamente por un per\u00edodo de treinta (30) d\u00edas. La cotizaci\u00f3n no incluye Impuesto de Transferencia (7%) sobre honorarios legales.':'Note 1  This quote is valid only for a period of thirty (30) days. The quote does not include Sales Tax (7%) on legal fees.';
-      addlNote = isEs?'Dependientes Adicionales (Hijos Menores de 18 a\u00f1os):\na)  Honorarios Legales: US$ 800.00 por dependiente.\nb)  Gastos: US$ 500.00 por dependiente.':'Additional Dependents (Children under 18 years old):\na)  Legal Fees for each additional Dependent will be US$ 800.00 per dependent.\nb)  Expenses for each additional Dependent: US$ 500.00 per dependent.';
+      addlNote = depNoteText(isEs);
 
     } else if (svc === 'qualified_investor') {
       title = isEs?('Residencia Permanente bajo Visa Red Carpet para '+ml+(qint>0?' m\u00e1s '+nw(qint)+' ('+qint+') Dependientes':'')):('Permanent Residency under Red Carpet Visa for '+ml+(qint>0?' plus '+nw(qint)+' ('+qint+') Dependents':''));
@@ -711,7 +843,8 @@ window.addEventListener("load", function() {
     if (!el.classList || !el.classList.contains('amt-in')) return;
     syncOverrides();
     var v = parseFloat(el.value);
-    overrides[parseInt(el.dataset.i, 10)] = (isNaN(v) || v < 0) ? 0 : v;
+    if (el.dataset.k) { noteOverrides[el.dataset.k] = (isNaN(v) || v < 0) ? 0 : v; }
+    else { overrides[parseInt(el.dataset.i, 10)] = (isNaN(v) || v < 0) ? 0 : v; }
     var row = el.parentNode.parentNode;
     row.classList.add('edited');
     if (!row.querySelector('.sr-tag')) {
@@ -721,6 +854,10 @@ window.addEventListener("load", function() {
       row.querySelector('.sr-lbl').appendChild(tag);
     }
     refreshTotal();
+    // Ajustar un rubro de dependientes cambia el monto por persona, asi que la
+    // nota tiene que seguirlo. No se repinta el campo que se esta escribiendo,
+    // para no mover el cursor.
+    if (!el.dataset.k) refreshDepNoteInputs();
   });
 
   document.getElementById('resetFees').addEventListener('click', resetOverrides);
