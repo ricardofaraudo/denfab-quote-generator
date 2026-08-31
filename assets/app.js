@@ -426,6 +426,20 @@ function depCounts() {
   return { depLegalFees: gn('ndep'), depExpenses: gn('ndep') };
 }
 
+/* Forma de pago de las visas de residencia. Es la misma en las cinco, asi que
+   vive en un solo lugar: antes cada visa tenia su propia redaccion y no
+   coincidian entre si. Los tramites que no son de residencia (inmuebles,
+   sociedades) tienen condiciones distintas y conservan las suyas. */
+function residencyPayments(isEs) {
+  return isEs
+    ? ['25% de los Honorarios Legales para contratar a DENFAB e iniciar el trabajo.',
+       '75% de los Honorarios Legales restantes previo a la solicitud de residencia.',
+       '100% de los Gastos previo a la solicitud de residencia.']
+    : ['25% of Legal Fees to engage DENFAB and start working.',
+       '75% of remaining Legal Fees prior to applying for residency.',
+       '100% of the Expenses prior to application for residency.'];
+}
+
 /* Que conceptos muestra la nota en cada programa, su precio de lista, y a
    quienes se considera dependiente. El texto entre parentesis se define por
    programa porque las categorias no son iguales en todas las visas. */
@@ -718,7 +732,7 @@ function makePDF(cname) {
     if (svc === 'pensionado') {
       title = isEs?'Residencia Permanente \u2013 Visa de Pensionado con Pensi\u00f3n P\u00fablica':'Tourist Pensionado Residency with Public Pension';
       svcs = isEs?['Registro de Solicitantes en Migraci\u00f3n','Traducci\u00f3n de Documentos al Espa\u00f1ol','Certificados de Salud','Gastos de Notar\u00eda Local','Solicitud de Residencia Permanente','Carn\u00e9 Temporal durante el Proceso','Permiso de M\u00faltiple Entrada y Salida','Traducci\u00f3n de Documentaci\u00f3n','Tramitaci\u00f3n de visa hasta emisi\u00f3n de Resoluci\u00f3n','Obtenci\u00f3n de Nota de C\u00e9dula tras la Residencia','Acompa\u00f1amiento al Tribunal Electoral para obtener C\u00e9dula']:['Registration of Applicants at Immigration','Translation of Documents into Spanish','Health Certificates','Local Notary Expenses','Application for Permanent Residency','Temporary ID during Process','Multiple Entry & Exit Permit','Translation of Documentation','Processing visa until Resolution has been issued','Obtaining Cedula Note After residency','Taking Client to Tribunal Electoral to obtain Cedula'];
-      pList = isEs?['25% de los Honorarios Legales para iniciar la revisi\u00f3n de documentaci\u00f3n.','75% de los Honorarios Legales restantes al registrar pasaportes en Migraci\u00f3n.','100% de los Gastos tras el Registro']:['25% of Legal Fees to start reviewing documentation.','75% of remaining Legal Fees at Registration of Passports at immigration.','100% of the Expenses after Registration'];
+      pList = residencyPayments(isEs);
       note1 = isEs?'Nota 1  Esta cotizaci\u00f3n es v\u00e1lida \u00fanicamente por un per\u00edodo de treinta (30) d\u00edas. No incluye Impuesto de Transferencia (7%).':'Note 1  This quote is valid only for a period of thirty (30) days. Quote does not include Sales Tax (7%).';
       addlNote = depNoteText(isEs);
 
@@ -727,7 +741,7 @@ function makePDF(cname) {
       var bkSvcEs = bkInclude ? ['Servicio de Apertura de Cuenta Bancaria y Obtenci\u00f3n de Carta de Referencia Bancaria.'] : [];
       var bkSvcEn = bkInclude ? ["Service for Opening up Bank Account and Obtaining Bank Reference Letter."] : [];
       svcs = isEs?[...bkSvcEs,'Registro de Corporaci\u00f3n','Obtenci\u00f3n de Certificado del Registro P\u00fablico','Registro de Solicitantes en Migraci\u00f3n','Traducci\u00f3n de Documentos al Espa\u00f1ol','Certificados de Salud','Gastos de Notar\u00eda Local','Solicitud de Carn\u00e9 de Residencia Indefinida','Carn\u00e9 Temporal durante el Proceso','Permiso de M\u00faltiple Entrada y Salida','Traducci\u00f3n de Documentaci\u00f3n','Tramitaci\u00f3n de visa hasta emisi\u00f3n de Resoluci\u00f3n.','Dos (2) Cheques de Caja a favor del Tesoro Nacional US$250.00','Todos los documentos para demostrar prop\u00f3sito econ\u00f3mico ante Migraci\u00f3n','Obtenci\u00f3n de Residencia Indefinida']:[...bkSvcEn,'Registration of Corporation','Obtaining of Public Registry Certificate','Registration of Applicants at Immigration','Translation of Documents into Spanish','Health Certificates','Local Notary Expenses','Application for Indefinite Residency ID','Temporary ID during Process','Multiple Entry & Exit Permit','Translation of Documentation','Processing visa until Resolution has been issued.',"Two (2) Cashier's Checks for National Treasury US$250.00",'All documents to prove economic purpose to Immigration','Obtaining Indefinite Residency'];
-      pList = isEs?['25% de los Honorarios Legales restantes para iniciar el trabajo.','75% de los Honorarios Legales previo a la solicitud.','100% de los Gastos previo a la solicitud']:['25% of Legal Fees remaining to start working.','75% of Legal Fees prior to application.','100% of the Expenses prior to application'];
+      pList = residencyPayments(isEs);
       note1 = isEs?'Nota 1  Esta cotizaci\u00f3n es v\u00e1lida \u00fanicamente por un per\u00edodo de treinta (30) d\u00edas. La cotizaci\u00f3n no incluye Impuesto de Transferencia (7%) sobre honorarios legales.':'Note 1  This quote is valid only for a period of thirty (30) days. The quote does not include Sales Tax (7%) on legal fees.';
       addlNote = depNoteText(isEs);
 
@@ -746,14 +760,14 @@ function makePDF(cname) {
       if(ic>0) endSvcs.push(isEs?(nw(ic)+' ('+ic+') Cheque(s) de Caja a favor del Servicio Nacional de Migraci\u00f3n US$800.00'):(nw(ic)+' ('+ic+") Cashier's Check(s) for National Service of Immigration US$800.00"));
       endSvcs=endSvcs.concat(isEs?['Todos los documentos para demostrar prop\u00f3sito econ\u00f3mico ante Migraci\u00f3n','Obtenci\u00f3n de Residencia Temporal de Dos (2) A\u00f1os']:['All documents to prove economic purpose to Immigration','Obtaining Two (2) Year Temporary Residency']);
       svcs = baseSvcs.concat(econSvcs).concat(endSvcs);
-      pList = isEs?['25% de los Honorarios Legales restantes para iniciar el trabajo.','75% de los Honorarios Legales previo a la solicitud.','100% de los Gastos previo a la solicitud']:['25% of Legal Fees remaining to start working.','75% of Legal Fees prior to application.','100% of the Expenses prior to application'];
+      pList = residencyPayments(isEs);
       note1 = isEs?'Nota 1  Esta cotizaci\u00f3n es v\u00e1lida \u00fanicamente por un per\u00edodo de treinta (30) d\u00edas. La cotizaci\u00f3n no incluye Impuesto de Transferencia (7%) sobre honorarios legales.':'Note 1  This quote is valid only for a period of thirty (30) days. The quote does not include Sales Tax (7%) on legal fees.';
       addlNote = depNoteText(isEs);
 
     } else if (svc === 'friendly_nations' && stage === 'permanent') {
       title = isEs?('Residencia Permanente bajo Visa de Pa\u00edses Amigos de Panam\u00e1 para '+ml+(ndep>0?' m\u00e1s '+ndep+' Dependiente(s)':'')):('Permanent Residency under Countries Friendly to Panama Visa for '+ml+(ndep>0?' plus '+ndep+' Dependent(s)':''));
       svcs = isEs?['Obtenci\u00f3n de Certificado del Registro P\u00fablico','Registro de Solicitantes en Migraci\u00f3n','Traducci\u00f3n de Documentos al Espa\u00f1ol','Certificados de Salud','Gastos de Notar\u00eda Local','Solicitud de Residencia Permanente','Carn\u00e9 Temporal durante el Proceso','Permiso de M\u00faltiple Entrada y Salida','Tramitaci\u00f3n de visa hasta emisi\u00f3n de Resoluci\u00f3n.','Todos los documentos para demostrar prop\u00f3sito econ\u00f3mico ante Migraci\u00f3n','Carn\u00e9 de Residencia Indefinida']:['Obtaining of Public Registry Certificate','Registration of Applicants at Immigration','Translation of Documents into Spanish','Health Certificates','Local Notary Expenses','Application for Permanent Residency','Temporary ID during Process','Multiple Entry & Exit Permit','Processing visa until Resolution has been issued.','All documents to prove economic purpose to Immigration','Indefinite Residency ID'];
-      pList = isEs?['25% de los Honorarios Legales restantes para iniciar el trabajo.','75% de los Honorarios Legales previo a la solicitud.','100% de los Gastos previo a la solicitud']:['25% of Legal Fees remaining to start working.','75% of Legal Fees prior to application.','100% of the Expenses prior to application'];
+      pList = residencyPayments(isEs);
       note1 = isEs?'Nota 1  Esta cotizaci\u00f3n es v\u00e1lida \u00fanicamente por un per\u00edodo de treinta (30) d\u00edas. La cotizaci\u00f3n no incluye Impuesto de Transferencia (7%) sobre honorarios legales.':'Note 1  This quote is valid only for a period of thirty (30) days. The quote does not include Sales Tax (7%) on legal fees.';
       addlNote = depNoteText(isEs);
 
@@ -763,7 +777,7 @@ function makePDF(cname) {
       if(qio>0) svcs.push(isEs?(nw(qio)+' ('+qio+') Cheque(s) de Caja al Servicio Nacional de Migraci\u00f3n por Dependiente(s) US$1,000.00'):(nw(qio)+' ('+qio+") Cashier's Check(s) for National Service of Immigration for Dependent(s) US$1,000.00"));
       if(qint>0) svcs.push(isEs?(nw(qint)+' ('+qint+') Cheque(s) de Caja al Ministerio de Comercio por Dependiente(s) US$1,000.00'):(nw(qint)+' ('+qint+") Cashier's Check(s) for Ministry of Commerce for Dependent(s) US$1,000.00"));
       svcs=svcs.concat(isEs?['Todos los documentos para demostrar prop\u00f3sito econ\u00f3mico ante Migraci\u00f3n','Carn\u00e9 de Residencia Permanente','C\u00e9dula']:['All documents to prove economic purpose to Immigration','Permanent Residency ID','Cedula']);
-      pList = isEs?['25% de los Honorarios Legales restantes para iniciar el trabajo.','Adelanto de US$200 por persona para gastos.','75% de los Honorarios Legales previo a la solicitud.','Monto restante de Gastos previo a la solicitud.']:['25% of Legal Fees remaining to start working.','Advance of US$200 per person for expenses.','75% of Legal Fees prior to application.','Remaining amount of Expenses prior to application.'];
+      pList = residencyPayments(isEs);
       note1 = isEs?'Nota 1  Esta cotización es válida únicamente por un período de treinta (30) días. La cotización no incluye Impuesto de Transferencia (7%) sobre honorarios legales.':'Note 1  This quote is valid only for a period of thirty (30) days. The quote does not include Sales Tax (7%) on legal fees.';
       addlNote = depNoteText(isEs);
 
