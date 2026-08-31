@@ -233,8 +233,11 @@ function computeFeeRows(isEs) {
   var bkMethod = gv('bank_type');
   var bk = bkMethod === 'remote' ? PRICING.bank.remote : PRICING.bank.panama;
   var ml = nm > 1 ? nw(nm) + ' (' + nm + ') ' + T.MAINS : T.MAIN;
-  function mlb(p) { return ml + (nm > 1 ? ' (US$ ' + p.toLocaleString('en-US') + ' ' + T.EACH + ')' : ''); }
-  function ea(p) { return ' (US$ ' + p.toLocaleString('en-US') + ' ' + T.EACH + ')'; }
+  // Las etiquetas NO llevan el precio unitario. Si el abogado ajusta el monto
+  // de un rubro a mano, un "(US$ 500 c/u)" incrustado en el texto quedaria
+  // contradiciendo la cifra de al lado. El monto de la fila es la unica cifra.
+  function mlb(p) { return ml; }
+  function ea(p) { return ''; }
   function bankLabel() {
     return isEs ? 'Apertura de Cuenta Bancaria (' + (bkMethod === 'remote' ? 'Remotamente' : 'En Panamá') + ')'
                 : 'Bank Account Opening (' + (bkMethod === 'remote' ? 'Remotely' : 'In Panama') + ')';
@@ -549,7 +552,6 @@ function makePDF(cname) {
   doc.text('Dear '+gv('sal')+' '+cname,LM,y); y+=16; doc.text(T.LOC,LM,y); y+=20;
 
   var ml = nm>1 ? nw(nm)+' ('+nm+') '+T.MAINS : T.MAIN;
-  function mlb(p){return ml+(nm>1?' (US$ '+p+' '+T.EACH+')':'');}
   var F=T.FEES, G=T.EXP, D=T.DEP;
 
   if (svc === 'corporation') {
@@ -631,7 +633,7 @@ function makePDF(cname) {
       svcs = isEs?['Obtenci\u00f3n de Certificado del Registro P\u00fablico','Registro de Solicitantes en Migraci\u00f3n','Traducci\u00f3n de Documentos al Espa\u00f1ol','Certificados de Salud','Gastos de Notar\u00eda Local','Solicitud de Residencia Permanente','Carn\u00e9 Temporal durante el Proceso','Permiso de M\u00faltiple Entrada y Salida','Tramitaci\u00f3n de visa hasta emisi\u00f3n de Resoluci\u00f3n.','Todos los documentos para demostrar prop\u00f3sito econ\u00f3mico ante Migraci\u00f3n','Carn\u00e9 de Residencia Indefinida']:['Obtaining of Public Registry Certificate','Registration of Applicants at Immigration','Translation of Documents into Spanish','Health Certificates','Local Notary Expenses','Application for Permanent Residency','Temporary ID during Process','Multiple Entry & Exit Permit','Processing visa until Resolution has been issued.','All documents to prove economic purpose to Immigration','Indefinite Residency ID'];
       pList = isEs?['25% de los Honorarios Legales restantes para iniciar el trabajo.','75% de los Honorarios Legales previo a la solicitud.','100% de los Gastos previo a la solicitud']:['25% of Legal Fees remaining to start working.','75% of Legal Fees prior to application.','100% of the Expenses prior to application'];
       note1 = isEs?'Nota 1  Esta cotizaci\u00f3n es v\u00e1lida \u00fanicamente por un per\u00edodo de treinta (30) d\u00edas. La cotizaci\u00f3n no incluye Impuesto de Transferencia (7%) sobre honorarios legales.':'Note 1  This quote is valid only for a period of thirty (30) days. The quote does not include Sales Tax (7%) on legal fees.';
-      addlNote = isEs?'Dependientes Adicionales (Hijos Menores de 18 a\u00f1os):\na)  Honorarios Legales: US$ 800.00 por dependiente.\nb)  Gastos: US$ 400.00 por dependiente.':'Additional Dependents (Children under 18 years old):\na)  Legal Fees for each additional Dependent will be US$ 800.00 per dependent.\nb)  Expenses for each additional Dependent: US$ 400.00 per dependent.';
+      addlNote = isEs?'Dependientes Adicionales (Hijos Menores de 18 a\u00f1os):\na)  Honorarios Legales: US$ 800.00 por dependiente.\nb)  Gastos: US$ 500.00 por dependiente.':'Additional Dependents (Children under 18 years old):\na)  Legal Fees for each additional Dependent will be US$ 800.00 per dependent.\nb)  Expenses for each additional Dependent: US$ 500.00 per dependent.';
 
     } else if (svc === 'qualified_investor') {
       title = isEs?('Residencia Permanente bajo Visa Red Carpet para '+ml+(qint>0?' m\u00e1s '+nw(qint)+' ('+qint+') Dependientes':'')):('Permanent Residency under Red Carpet Visa for '+ml+(qint>0?' plus '+nw(qint)+' ('+qint+') Dependents':''));

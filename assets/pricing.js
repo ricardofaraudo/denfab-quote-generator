@@ -52,9 +52,9 @@ var PRICING = {
   /* --- Paises Amigos — Residencia Permanente ----------------------------- */
   friendlyNationsPermanent: {
     legalFees:      2500,
-    expenses:        400,
+    expenses:        500,
     depLegalFees:    800,
-    depExpenses:     400
+    depExpenses:     500
   },
 
   /* --- Red Carpet / Inversionista Calificado ----------------------------- */
