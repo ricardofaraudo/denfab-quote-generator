@@ -1,0 +1,27 @@
+# Generated quote PDFs. The app builds these at runtime; they are never part
+# of the site, and they used to pile up loose in the working tree.
+*.pdf
+
+# Throwaway files — put scratch work in here and it stays out of git.
+scratch/
+
+# Secrets and local environment. Never commit these.
+.env
+.env.*
+!.env.example
+
+# Vercel CLI link directory
+.vercel
+
+# Dependencies
+node_modules/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini
