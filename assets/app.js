@@ -687,7 +687,21 @@ function makePDF(cname) {
   doc.addImage(img,'PNG',PW/2-86,TM,172,100);
   var y = TM+112;
   doc.setFont('helvetica','normal'); doc.setFontSize(10.5); st(C.dark);
-  doc.text('Dear '+gv('sal')+' '+cname,LM,y); y+=16; doc.text(T.LOC,LM,y); y+=20;
+  // El saludo se construye en el idioma de la cotizacion. Antes decia 'Dear' siempre,
+  // asi que una cotizacion en espanol abria con "Dear Mr. Arturo Brunelli".
+  // En espanol tambien se traduce el tratamiento, porque el abogado suele dejar el
+  // que viene por defecto (Mr.) aunque este generando en espanol.
+  var salv = gv('sal');
+  var greet;
+  if (isEs) {
+    var fem = (salv === 'Sra.' || salv === 'Mrs.' || salv === 'Ms.');
+    greet = fem ? 'Estimada' : 'Estimado';
+    var ES_SAL = { 'Mr.':'Sr.', 'Mrs.':'Sra.', 'Ms.':'Sra.' };
+    salv = ES_SAL[salv] || salv;   // Dr., Sr. y Sra. se quedan igual
+  } else {
+    greet = 'Dear';
+  }
+  doc.text(greet+' '+salv+' '+cname,LM,y); y+=16; doc.text(T.LOC,LM,y); y+=20;
 
   var ml = nm>1 ? nw(nm)+' ('+nm+') '+T.MAINS : T.MAIN;
   var F=T.FEES, G=T.EXP, D=T.DEP;
