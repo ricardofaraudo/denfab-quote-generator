@@ -22,7 +22,7 @@ var TX = {
     lc:'Client Information', ls:'Salutation', ln:'Client Full Name', lce:'Client Email', ll:'Issuing Lawyer', lo:'Lawyer Name',
     o_oth:'Other...', lsv:'Service Details', lst:'Service Type',
     o_pen:'Pensionado / Retirement Visa', o_fn:'Friendly Nations Visa',
-    o_bt:'Bilateral Treaty with Italians', o_qi:'Red Carpet / Qualified Investor Visa', o_wp:'Three (3) Year Temporary Work Permit',
+    o_bt:'Bilateral Treaty with Italians', o_qi:'Red Carpet / Qualified Investor Visa', o_wp:'Temporary Work Permit',
     d_wp:'Applicants', l_wp:'Number of Applicants',
     o_re:'Real Estate Purchase', o_ppr:'Review and Execution of Promise of Purchase Agreement with Developer', o_ps:'Real Estate Transaction Sale of Property', o_corp:'Panamanian Corporation', o_found:'Private Interest Foundation',
     d_stg:'Visa Stage', l_stg:'Stage', o_tmp:'Two (2) Year Temporary Residency', o_prm:'Permanent Residency',
@@ -55,7 +55,7 @@ var TX = {
     lc:'Informaci\u00f3n del Cliente', ls:'Tratamiento', ln:'Nombre Completo del Cliente', lce:'Correo del Cliente', ll:'Abogado Emisor', lo:'Nombre del Abogado',
     o_oth:'Otro...', lsv:'Detalles del Servicio', lst:'Tipo de Servicio',
     o_pen:'Visa de Pensionado / Jubilaci\u00f3n', o_fn:'Visa de Pa\u00edses Amigos',
-    o_bt:'Tratado Bilateral con Italianos', o_qi:'Visa Red Carpet / Inversionista Calificado', o_wp:'Permiso de Trabajo Temporal de Tres (3) Años',
+    o_bt:'Tratado Bilateral con Italianos', o_qi:'Visa Red Carpet / Inversionista Calificado', o_wp:'Permiso de Trabajo Temporal',
     d_wp:'Solicitantes', l_wp:'Número de Solicitantes',
     o_re:'Compra de Propiedad', o_ppr:'Revisi\u00f3n y Ejecuci\u00f3n de Promesa de Compraventa con Promotora', o_ps:'Transacci\u00f3n Inmobiliaria \u2013 Venta de Propiedad', o_corp:'Sociedad An\u00f3nima Paname\u00f1a', o_found:'Fundaci\u00f3n de Inter\u00e9s Privado',
     d_stg:'Etapa de Visa', l_stg:'Etapa', o_tmp:'Residencia Temporal de Dos (2) A\u00f1os', o_prm:'Residencia Permanente',
@@ -357,10 +357,10 @@ function computeFeeRows(isEs) {
     pr = PRICING.workPermit;
     var nwp = Math.max(1, gn('nwp'));
     var wl = nwp > 1 ? ' – ' + nw(nwp) + ' (' + nwp + ') ' + (isEs ? 'Solicitantes' : 'Applicants') : '';
-    rows = isEs ? [['Honorarios Legales para la obtención de Permiso de Trabajo Temporal de Tres (3) Años' + wl, pr.legalFees * nwp],
-                   ['Gastos para la obtención de Permiso de Trabajo Temporal de Tres (3) Años' + wl, pr.expenses * nwp]]
-                : [['Legal Fees for obtaining Three (3) Year Temporary Work Permit' + wl, pr.legalFees * nwp],
-                   ['Expenses on obtaining Three (3) Year Temporary Work Permit' + wl, pr.expenses * nwp]];
+    rows = isEs ? [['Honorarios Legales para la obtención de Permiso de Trabajo Temporal' + wl, pr.legalFees * nwp],
+                   ['Gastos para la obtención de Permiso de Trabajo Temporal' + wl, pr.expenses * nwp]]
+                : [['Legal Fees for obtaining Temporary Work Permit' + wl, pr.legalFees * nwp],
+                   ['Expenses on obtaining Temporary Work Permit' + wl, pr.expenses * nwp]];
 
   } else if (svc === 'property_sale') {
     pr = PRICING.propertySale;
@@ -841,12 +841,12 @@ function makePDF(cname) {
       sig(y); save(cname,svc); return;
     } else if (svc === 'work_permit') {
       var nwp2 = Math.max(1, gn('nwp'));
-      title=isEs?('Obtención de Permiso de Trabajo Temporal de Tres (3) Años'+(nwp2>1?' para '+nw(nwp2)+' ('+nwp2+') Solicitantes':''))
-                :('Obtaining Three (3) Year Temporary Work Permit'+(nwp2>1?' for '+nw(nwp2)+' ('+nwp2+') Applicants':''));
+      title=isEs?('Obtención de Permiso de Trabajo Temporal'+(nwp2>1?' para '+nw(nwp2)+' ('+nwp2+') Solicitantes':''))
+                :('Obtaining Temporary Work Permit'+(nwp2>1?' for '+nw(nwp2)+' ('+nwp2+') Applicants':''));
       y=reBox(title,y); y+=8;
       doc.setFont('helvetica','normal'); doc.setFontSize(10.5); st(C.dark); doc.text(T.SEC1,LM,y); y+=14; doc.setFontSize(9.5);
-      var wpSvcs=isEs?['Solicitud de Certificación de Estatus Migratorio ante Migración','Acompañamiento al cliente para su registro en el Ministerio de Trabajo','Tramitación del permiso de trabajo hasta la emisión de la Resolución','Acompañamiento al cliente al Ministerio de Trabajo para obtener el Permiso de Trabajo de Tres (3) Años']
-                     :['Requesting Certification from Immigration for Residency Status','Taking client to get registered at Ministry of Labor','Processing work permit until issuance of Resolution','Taking client to Ministry of Labor to obtain Three (3) Year Work Permit'];
+      var wpSvcs=isEs?['Solicitud de Certificación de Estatus Migratorio ante Migración','Acompañamiento al cliente para su registro en el Ministerio de Trabajo','Tramitación del permiso de trabajo hasta la emisión de la Resolución','Acompañamiento al cliente al Ministerio de Trabajo para obtener el Permiso de Trabajo Temporal']
+                     :['Requesting Certification from Immigration for Residency Status','Taking client to get registered at Ministry of Labor','Processing work permit until issuance of Resolution','Taking client to Ministry of Labor to obtain Temporary Work Permit'];
       wpSvcs.forEach(function(s,i){y=np(y,14);var ls=doc.splitTextToSize((i+1)+'.  '+s,CW-20);doc.text(ls,LM+20,y);y+=ls.length*13+1;});
       y+=8; y=np(y,30); doc.setFont('helvetica','normal'); doc.setFontSize(10.5); st(C.dark); doc.text(T.SEC2,LM,y); y+=12;
       var wpR=quoteRows;

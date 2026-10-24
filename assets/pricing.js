@@ -66,7 +66,7 @@ var PRICING = {
     depExpensesUnder12: 1400
   },
 
-  /* --- Permiso de Trabajo Temporal de Tres (3) Anios ---------------------- */
+  /* --- Permiso de Trabajo Temporal -------------------------------------- */
   workPermit: {
     legalFees:      1200,   // por solicitante
     expenses:        400    // por solicitante
