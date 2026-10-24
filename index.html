@@ -138,7 +138,12 @@
     <div class="f"><label id="l_dd">Due Diligence Fee (US$)</label>
       <input type="number" id="fee_dd" value="1000" oninput="refresh()"></div>
     <div class="f"><label id="l_deed">Public Deed Fee (US$)</label>
-      <input type="number" id="fee_deed" value="1250" oninput="refresh()"></div></div></div>
+      <input type="number" id="fee_deed" value="1250" oninput="refresh()"></div>
+    <div class="f"><label id="l_cust">Cashier's Check Custody at Notary (US$ 300.00)</label>
+      <select id="cust_toggle" onchange="refresh()">
+        <option value="no" id="o_cust_n">No</option>
+        <option value="yes" id="o_cust_y">Yes &ndash; Add US$ 300.00</option>
+      </select></div></div></div>
 
   <div id="r_ppr" class="hidden"><div class="sdiv" id="d_ppr">Promise of Purchase Agreement Details</div>
     <div class="g2">

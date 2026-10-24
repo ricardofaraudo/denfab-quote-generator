@@ -30,7 +30,7 @@ var TX = {
     l_bnk:'Bank Account Opening', o_bkp:'In Panama \u2013 US$ 750.00', o_bkr:'Remotely \u2013 US$ 1,250.00',
     d_ent:'Corporation / Foundation', l_ent:'Include Entity', o_ent_n:'None', o_ent_c:'Corporation \u2013 US$ 1,400.00', o_ent_cp:'Corporation + Operating Permit \u2013 US$ 2,155.00', o_ent_f:'Private Interest Foundation \u2013 US$ 1,600.00',
     d_bkt:'Bank Account Service', l_bkt:'Include Bank Account Opening', o_bkt_y:'Yes \u2013 Include', o_bkt_n:'No \u2013 Exclude', l_bkt2:'Method', o_bkt_p:'In Panama \u2013 US$ 750.00', o_bkt_r:'Remotely \u2013 US$ 1,250.00',
-    l_dd:'Due Diligence Fee (US$)', l_deed:'Public Deed Fee (US$)',
+    l_dd:'Due Diligence Fee (US$)', l_deed:'Public Deed Fee (US$)', l_cust:'Cashier\'s Check Custody at Notary (US$ 300.00)', o_cust_n:'No', o_cust_y:'Yes – Add US$ 300.00',
     d_ppr:'Promise of Purchase Agreement Details', l_dd_ppr:'Due Diligence Fee (US$)', l_poa:'Include Power of Attorney (US$ 250.00)', o_poa_n:'No', o_poa_y:'Yes \u2013 Add US$ 250.00',
     d_ps:'Sale of Property Details', l_dd_ps:'Legal Work / Due Diligence Fee (US$)',
     d_prop:'Property Details', l_pv:'Property Value (US$)', d_main:'Main Applicants', l_main:'Number of Main Applicants',
@@ -63,7 +63,7 @@ var TX = {
     l_bnk:'Apertura de Cuenta Bancaria', o_bkp:'En Panam\u00e1 \u2013 US$ 750.00', o_bkr:'Remotamente \u2013 US$ 1,250.00',
     d_ent:'Sociedad / Fundaci\u00f3n', l_ent:'Incluir Entidad', o_ent_n:'Ninguna', o_ent_c:'Sociedad An\u00f3nima \u2013 US$ 1,400.00', o_ent_cp:'Sociedad An\u00f3nima + Permiso de Operaci\u00f3n \u2013 US$ 2,155.00', o_ent_f:'Fundaci\u00f3n de Inter\u00e9s Privado \u2013 US$ 1,600.00',
     d_bkt:'Servicio de Cuenta Bancaria', l_bkt:'Incluir Apertura de Cuenta Bancaria', o_bkt_y:'S\u00ed \u2013 Incluir', o_bkt_n:'No \u2013 Excluir', l_bkt2:'M\u00e9todo', o_bkt_p:'En Panam\u00e1 \u2013 US$ 750.00', o_bkt_r:'Remotamente \u2013 US$ 1,250.00',
-    l_dd:'Honorarios Debida Diligencia (US$)', l_deed:'Honorarios Escritura P\u00fablica (US$)',
+    l_dd:'Honorarios Debida Diligencia (US$)', l_deed:'Honorarios Escritura P\u00fablica (US$)', l_cust:'Custodia de Cheque en Notar\u00eda (US$ 300.00)', o_cust_n:'No', o_cust_y:'S\u00ed \u2013 Agregar US$ 300.00',
     d_ppr:'Detalles de Promesa de Compraventa', l_dd_ppr:'Honorarios Debida Diligencia (US$)', l_poa:'Incluir Poder Especial (US$ 250.00)', o_poa_n:'No', o_poa_y:'S\u00ed \u2013 Agregar US$ 250.00',
     d_ps:'Detalles de Venta de Propiedad', l_dd_ps:'Honorarios Trabajo Legal / Debida Diligencia (US$)',
     d_prop:'Detalles del Inmueble', l_pv:'Valor del Inmueble (US$)', d_main:'Solicitantes Principales', l_main:'N\u00famero de Solicitantes Principales',
@@ -95,7 +95,7 @@ function setLang(l) {
              'd_stg','l_stg','o_tmp','o_prm','d_act','l_act','o_td','o_wc','o_rep','l_bnk','o_bkp','o_bkr',
              'd_bkt','l_bkt','o_bkt_y','o_bkt_n','l_bkt2','o_bkt_p','o_bkt_r',
              'd_ent','l_ent','o_ent_n','o_ent_c','o_ent_cp','o_ent_f',
-             'l_dd','l_deed',
+             'l_dd','l_deed','l_cust','o_cust_n','o_cust_y',
              'd_ppr','l_dd_ppr','l_poa','o_poa_n','o_poa_y','o_ppr',
              'd_ps','l_dd_ps','o_ps',
              'o_wp','d_wp','l_wp',
@@ -213,7 +213,7 @@ function configSignature() {
   return [gv('svc'), gv('stage'), gv('fn_act'), gv('entity_sel'), gv('bank_toggle'),
           gv('bank_type'), gv('poa_toggle'), getNM(), gn('ndep'), gn('fn_o12'),
           gn('fn_u12'), gn('qi_o12'), gn('qi_u12'), gv('propval'), gv('fee_dd'),
-          gv('fee_deed'), gv('fee_dd_ppr'), gv('fee_dd_ps'), gn('nwp')].join('|');
+          gv('fee_deed'), gv('cust_toggle'), gv('fee_dd_ppr'), gv('fee_dd_ps'), gn('nwp')].join('|');
 }
 
 function syncOverrides() {
@@ -339,6 +339,10 @@ function computeFeeRows(isEs) {
       ['Notary Expenses for Closing of Public Deed', pr.notary],
       ['Update of Property Value and Name at ANIP for Property Tax purposes', pr.anipUpdate]
     ];
+    if (gv('cust_toggle') === 'yes') {
+      rows.push(isEs ? ['Custodia de Cheque de Gerencia para Pago Final en Notaría', pr.checkCustody]
+                     : ["Cashier's Check for Final Payment Custody at Notary", pr.checkCustody]);
+    }
     entRows(isEs).reverse().forEach(function(r) { rows.unshift(r); });
 
   } else if (svc === 'promise_review') {
@@ -825,6 +829,7 @@ function makePDF(cname) {
       y=fRow(T.GTOTAL,grand,y,true,false); y+=4;
       y=iTxt(isEs?'Nota 1. Los gastos de Registro y Notar\u00eda son estimados y sujetos a cambio. Esta cotizaci\u00f3n es v\u00e1lida por treinta (30) d\u00edas calendario. No incluye Impuesto de Transferencia sobre Honorarios Legales (7%).':'Note 1. Registration and Notary Fees are estimates and subject to change. This quote is valid for thirty (30) calendar days. Does not include Sales Tax on Legal Fees (7%).',y); y+=4;
       var reAddl=isEs?'Nuestra Cotizaci\u00f3n incluye los siguientes servicios:\na)  Debida Diligencia sobre el Inmueble en el Registro P\u00fablico y la ANATI.\nb)  Poder Especial para Promesa de Compraventa y Firma de Escritura Definitiva.\nc)  Confecci\u00f3n o Revisi\u00f3n y Negociaci\u00f3n de la Promesa de Compraventa.\nd)  Confecci\u00f3n de Escritura P\u00fablica de Cambio de T\u00edtulo del Inmueble.\ne)  Cierre de Escritura ante Notario e Inscripci\u00f3n en el Registro P\u00fablico.\nf)  Actualizaci\u00f3n de Valor y Propietario en el Ministerio de Econom\u00eda y Finanzas.\ng)  Informe de Impuesto de Inmuebles con recomendaciones para reducirlo si aplica.':'Our Quote includes the following services:\na)  Due Diligence on Property in Public Registry and ANATI.\nb)  Special Power of Attorney for Promise of Purchase Agreement and Signature of Final Deed.\nc)  Confection or Review and Negotiation of Promise of Purchase Agreement.\nd)  Confection of Public Deed for Change of Title for the Property.\ne)  Closing Deed at Notary and Registering at Public Registry for Change of Title.\nf)  Update Value and Ownership at Ministry of Economy and Finance for Tax Purposes.\ng)  Property Tax Report with recommendations on how to reduce property tax if applicable.';
+      if (gv('cust_toggle') === 'yes') reAddl += isEs ? '\nh)  Custodia de Cheque de Gerencia para Pago Final en Notaría.' : "\nh)  Cashier's Check for Final Payment Custody at Notary.";
       y=addl(reAddl,y);
       var rePmts=isEs?['50% de los Honorarios Legales para iniciar el trabajo.','50% de los Honorarios Legales y 100% de los Gastos previo al cierre.']:['50% of Legal Fees to begin work.','50% of Legal Fees and 100% of Expenses prior to closing.'];
       y=pmts(rePmts,y); sig(y); save(cname,svc); return;

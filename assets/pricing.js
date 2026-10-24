@@ -79,7 +79,8 @@ var PRICING = {
     publicDeedDefault:   1250,  // editable por cotizacion en el formulario
     registryRate:       0.003,  // % sobre el valor del inmueble
     notary:               125,
-    anipUpdate:           300
+    anipUpdate:           300,
+    checkCustody:         300   // opcional: custodia de cheque de gerencia en notaria
   },
 
   /* --- Revision de Promesa de Compraventa con Promotora ------------------ */
