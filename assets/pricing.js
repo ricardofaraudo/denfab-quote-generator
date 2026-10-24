@@ -66,6 +66,12 @@ var PRICING = {
     depExpensesUnder12: 1400
   },
 
+  /* --- Permiso de Trabajo Temporal de Tres (3) Anios ---------------------- */
+  workPermit: {
+    legalFees:      1200,   // por solicitante
+    expenses:        400    // por solicitante
+  },
+
   /* --- Compra de Propiedad ----------------------------------------------- */
   realEstate: {
     dueDiligenceDefault: 1000,  // editable por cotizacion en el formulario

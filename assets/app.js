@@ -22,7 +22,8 @@ var TX = {
     lc:'Client Information', ls:'Salutation', ln:'Client Full Name', lce:'Client Email', ll:'Issuing Lawyer', lo:'Lawyer Name',
     o_oth:'Other...', lsv:'Service Details', lst:'Service Type',
     o_pen:'Pensionado / Retirement Visa', o_fn:'Friendly Nations Visa',
-    o_bt:'Bilateral Treaty with Italians', o_qi:'Red Carpet / Qualified Investor Visa',
+    o_bt:'Bilateral Treaty with Italians', o_qi:'Red Carpet / Qualified Investor Visa', o_wp:'Three (3) Year Temporary Work Permit',
+    d_wp:'Applicants', l_wp:'Number of Applicants',
     o_re:'Real Estate Purchase', o_ppr:'Review and Execution of Promise of Purchase Agreement with Developer', o_ps:'Real Estate Transaction Sale of Property', o_corp:'Panamanian Corporation', o_found:'Private Interest Foundation',
     d_stg:'Visa Stage', l_stg:'Stage', o_tmp:'Two (2) Year Temporary Residency', o_prm:'Permanent Residency',
     d_act:'Economic Activity', l_act:'Type of Activity', o_td:'Time Deposit', o_wc:'Work Contract', o_rep:'Real Estate Purchase',
@@ -54,7 +55,8 @@ var TX = {
     lc:'Informaci\u00f3n del Cliente', ls:'Tratamiento', ln:'Nombre Completo del Cliente', lce:'Correo del Cliente', ll:'Abogado Emisor', lo:'Nombre del Abogado',
     o_oth:'Otro...', lsv:'Detalles del Servicio', lst:'Tipo de Servicio',
     o_pen:'Visa de Pensionado / Jubilaci\u00f3n', o_fn:'Visa de Pa\u00edses Amigos',
-    o_bt:'Tratado Bilateral con Italianos', o_qi:'Visa Red Carpet / Inversionista Calificado',
+    o_bt:'Tratado Bilateral con Italianos', o_qi:'Visa Red Carpet / Inversionista Calificado', o_wp:'Permiso de Trabajo Temporal de Tres (3) Años',
+    d_wp:'Solicitantes', l_wp:'Número de Solicitantes',
     o_re:'Compra de Propiedad', o_ppr:'Revisi\u00f3n y Ejecuci\u00f3n de Promesa de Compraventa con Promotora', o_ps:'Transacci\u00f3n Inmobiliaria \u2013 Venta de Propiedad', o_corp:'Sociedad An\u00f3nima Paname\u00f1a', o_found:'Fundaci\u00f3n de Inter\u00e9s Privado',
     d_stg:'Etapa de Visa', l_stg:'Etapa', o_tmp:'Residencia Temporal de Dos (2) A\u00f1os', o_prm:'Residencia Permanente',
     d_act:'Actividad Econ\u00f3mica', l_act:'Tipo de Actividad', o_td:'Dep\u00f3sito a Plazo', o_wc:'Contrato de Trabajo', o_rep:'Compra de Propiedad',
@@ -96,6 +98,7 @@ function setLang(l) {
              'l_dd','l_deed',
              'd_ppr','l_dd_ppr','l_poa','o_poa_n','o_poa_y','o_ppr',
              'd_ps','l_dd_ps','o_ps',
+             'o_wp','d_wp','l_wp',
              'd_prop','l_pv','d_main','l_main','d_dep','d_depfn','d_depqi','l_dep','l_tfn','l_tqi','l_sum','btn_txt','mail_txt'];
   ids.forEach(function(id) { var el = document.getElementById(id); if (el && T[id]) el.textContent = T[id]; });
   document.getElementById('l_o12fn').innerHTML = T.l_o12fn + ' <span class="lh" id="h_o12fn">' + T.h_o12fn + '</span>';
@@ -112,11 +115,11 @@ function setLang(l) {
 
 function refresh() {
   var svc = gv('svc'), stage = gv('stage'), T = TX[lang];
-  var all = ['r_fns','r_fna','r_re','r_main','r_deps','r_depfn','r_depqi','r_fix','r_bank_toggle','r_ppr','r_ps','r_entity'];
+  var all = ['r_fns','r_fna','r_re','r_main','r_deps','r_depfn','r_depqi','r_fix','r_bank_toggle','r_ppr','r_ps','r_entity','r_wp'];
   all.forEach(function(id) { document.getElementById(id).classList.add('hidden'); });
 
   // Show bank toggle for all visa programs (not corporation/foundation/real_estate)
-  if (svc !== 'corporation' && svc !== 'foundation' && svc !== 'real_estate' && svc !== 'promise_review' && svc !== 'property_sale') {
+  if (svc !== 'corporation' && svc !== 'foundation' && svc !== 'real_estate' && svc !== 'promise_review' && svc !== 'property_sale' && svc !== 'work_permit') {
     document.getElementById('r_bank_toggle').classList.remove('hidden');
     // Set default: include for FN work_contract, exclude for others unless already set
     var btEl = document.getElementById('bank_toggle');
@@ -133,7 +136,7 @@ function refresh() {
   }
 
   // Entity selector: available on every quote type except Corporation / Foundation themselves
-  if (svc !== 'corporation' && svc !== 'foundation') {
+  if (svc !== 'corporation' && svc !== 'foundation' && svc !== 'work_permit') {
     document.getElementById('r_entity').classList.remove('hidden');
     var enEl = document.getElementById('entity_sel');
     var entKey = svc + '|' + gv('fn_act');
@@ -154,6 +157,8 @@ function refresh() {
     document.getElementById('r_ppr').classList.remove('hidden');
   } else if (svc === 'property_sale') {
     document.getElementById('r_ps').classList.remove('hidden');
+  } else if (svc === 'work_permit') {
+    document.getElementById('r_wp').classList.remove('hidden');
   } else {
     document.getElementById('r_main').classList.remove('hidden');
     if (svc === 'friendly_nations') {
@@ -208,7 +213,7 @@ function configSignature() {
   return [gv('svc'), gv('stage'), gv('fn_act'), gv('entity_sel'), gv('bank_toggle'),
           gv('bank_type'), gv('poa_toggle'), getNM(), gn('ndep'), gn('fn_o12'),
           gn('fn_u12'), gn('qi_o12'), gn('qi_u12'), gv('propval'), gv('fee_dd'),
-          gv('fee_deed'), gv('fee_dd_ppr'), gv('fee_dd_ps')].join('|');
+          gv('fee_deed'), gv('fee_dd_ppr'), gv('fee_dd_ps'), gn('nwp')].join('|');
 }
 
 function syncOverrides() {
@@ -346,6 +351,16 @@ function computeFeeRows(isEs) {
                      : ['Special Power of Attorney for Promise of Purchase Agreement', pr.powerOfAttorney]);
     }
     entRows(isEs).reverse().forEach(function(r) { rows.unshift(r); });
+
+  } else if (svc === 'work_permit') {
+    // Un solicitante por permiso; no hay dependientes en este tramite.
+    pr = PRICING.workPermit;
+    var nwp = Math.max(1, gn('nwp'));
+    var wl = nwp > 1 ? ' – ' + nw(nwp) + ' (' + nwp + ') ' + (isEs ? 'Solicitantes' : 'Applicants') : '';
+    rows = isEs ? [['Honorarios Legales para la obtención de Permiso de Trabajo Temporal de Tres (3) Años' + wl, pr.legalFees * nwp],
+                   ['Gastos para la obtención de Permiso de Trabajo Temporal de Tres (3) Años' + wl, pr.expenses * nwp]]
+                : [['Legal Fees for obtaining Three (3) Year Temporary Work Permit' + wl, pr.legalFees * nwp],
+                   ['Expenses on obtaining Three (3) Year Temporary Work Permit' + wl, pr.expenses * nwp]];
 
   } else if (svc === 'property_sale') {
     pr = PRICING.propertySale;
@@ -666,7 +681,7 @@ function makePDF(cname) {
     return y;
   }
   function save(cname,svc){
-    var L={pensionado:'Pensionado_Visa',friendly_nations:'Friendly_Nations_Visa',bilateral_treaty:'Bilateral_Treaty_Italians',qualified_investor:'Red_Carpet_Visa',real_estate:'Real_Estate',promise_review:'Promise_Purchase_Review',property_sale:'Property_Sale',corporation:'Corporation',foundation:'Foundation'};
+    var L={pensionado:'Pensionado_Visa',friendly_nations:'Friendly_Nations_Visa',bilateral_treaty:'Bilateral_Treaty_Italians',qualified_investor:'Red_Carpet_Visa',real_estate:'Real_Estate',promise_review:'Promise_Purchase_Review',property_sale:'Property_Sale',work_permit:'Work_Permit',corporation:'Corporation',foundation:'Foundation'};
     var filename='Quote_'+cname.replace(/\s+/g,'_')+'_'+(L[svc]||svc)+(lang==='es'?'_ES':'')+'.pdf';
     // En modo captura el PDF se devuelve para adjuntarlo a un correo,
     // en vez de descargarse.
@@ -824,6 +839,24 @@ function makePDF(cname) {
       y=fRow(T.GTOTAL,grand,y,true,false); y+=4;
       y=iTxt(isEs?'Nota 1. Esta cotizaci\u00f3n es v\u00e1lida por treinta (30) d\u00edas calendario. No incluye Impuesto de Transferencia sobre Honorarios Legales (7%).':'Note 1. This quote is valid for thirty (30) calendar days. Does not include Sales Tax on Legal Fees (7%).',y); y+=4;
       sig(y); save(cname,svc); return;
+    } else if (svc === 'work_permit') {
+      var nwp2 = Math.max(1, gn('nwp'));
+      title=isEs?('Obtención de Permiso de Trabajo Temporal de Tres (3) Años'+(nwp2>1?' para '+nw(nwp2)+' ('+nwp2+') Solicitantes':''))
+                :('Obtaining Three (3) Year Temporary Work Permit'+(nwp2>1?' for '+nw(nwp2)+' ('+nwp2+') Applicants':''));
+      y=reBox(title,y); y+=8;
+      doc.setFont('helvetica','normal'); doc.setFontSize(10.5); st(C.dark); doc.text(T.SEC1,LM,y); y+=14; doc.setFontSize(9.5);
+      var wpSvcs=isEs?['Solicitud de Certificación de Estatus Migratorio ante Migración','Acompañamiento al cliente para su registro en el Ministerio de Trabajo','Tramitación del permiso de trabajo hasta la emisión de la Resolución','Acompañamiento al cliente al Ministerio de Trabajo para obtener el Permiso de Trabajo de Tres (3) Años']
+                     :['Requesting Certification from Immigration for Residency Status','Taking client to get registered at Ministry of Labor','Processing work permit until issuance of Resolution','Taking client to Ministry of Labor to obtain Three (3) Year Work Permit'];
+      wpSvcs.forEach(function(s,i){y=np(y,14);var ls=doc.splitTextToSize((i+1)+'.  '+s,CW-20);doc.text(ls,LM+20,y);y+=ls.length*13+1;});
+      y+=8; y=np(y,30); doc.setFont('helvetica','normal'); doc.setFontSize(10.5); st(C.dark); doc.text(T.SEC2,LM,y); y+=12;
+      var wpR=quoteRows;
+      grand=quoteTotal(wpR);
+      wpR.forEach(function(r){y=fRow(r[0],r[1],y,false,false);});
+      y=fRow(T.GTOTAL,grand,y,true,false); y+=6;
+      y=iTxt(isEs?'Nota 1  Esta cotización es válida únicamente por un período de treinta (30) días. La cotización no incluye Impuesto de Transferencia (7%) sobre honorarios legales.':'Note 1  This quote is valid only for a period of thirty (30) days. The quote does not include Sales Tax (7%) on legal fees.',y);
+      var wpPmts=isEs?['100% de los Gastos del proceso para iniciar el trámite.','100% de los Honorarios Legales del proceso para iniciar el trámite.']
+                     :['100% of all Expenses in the process in order to begin the process.','100% of Legal Fees in the process in order to begin the process.'];
+      y=pmts(wpPmts,y); sig(y); save(cname,svc); return;
     } else if (svc === 'property_sale') {
       title=isEs?'Cotizaci\u00f3n \u2013 Transacci\u00f3n Inmobiliaria: Venta de Propiedad':'Quote \u2013 Real Estate Transaction: Sale of Property';
       y=reBox(title,y); y+=8;
